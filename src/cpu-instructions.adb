@@ -15,21 +15,23 @@ package body CPU.Instructions is
   end CheckZero;
 
 
-  procedure LD_Instr (Dest : Address; Val : UInt8) is
-  begin
-    WriteByte (Dest, Val);
-  end LD_Instr;
+  ----------
+  -- Load --
+  ----------
 
-  procedure LD_Instr (Dest : in out Register; Val : UInt8) is
+  -- 16-bit push register onto stack
+  procedure PUSH_Instr (Source : Register16) is
   begin
-    Dest.Val := Val;
-  end LD_Instr;
+    WriteDouble (Reg.SP.Val, Source.Val);
+    Reg.SP.Val := Reg.SP.Val - 2;
+  end PUSH_Instr;
 
-  procedure LD_Instr (Dest : in out Register16; Val : UInt8) is
+  -- 16-bit pop stack into register
+  procedure POP_Instr (Dest : in out Register16) is
   begin
-    WriteByte (Dest.Val, Val);
-  end LD_Instr;
-
+    Dest.Val := ReadDouble (Reg.SP.Val);
+    Reg.SP.Val := Reg.SP.Val + 2;
+  end POP_Instr;
 
   ----------------
   -- Arithmetic --
@@ -39,8 +41,7 @@ package body CPU.Instructions is
   procedure ADD_Instr (Operand : Register) is
   begin
     Reg.F.Carry_Flag := (if Reg.A.Val + Operand.Val < Reg.A.Val then 2#1# else 2#0#);
-    Reg.F.HalfCarry_Flag := (if Reg.A.Val < 16#F# and Reg.A.Val + Operand.Val > 16#F#
-                             then 2#1# else 2#0#);
+    Reg.F.HalfCarry_Flag := (if Reg.A.Val < 16#F# and Reg.A.Val + Operand.Val > 16#F# then 2#1# else 2#0#);
     Reg.F.Subtraction_Flag := 2#0#;
     Reg.A.Val := Reg.A.Val + Operand.Val;
     CheckZero;
@@ -178,6 +179,87 @@ package body CPU.Instructions is
     Operand.Val := Operand.Val + 1;
   end DEC_Instr;
 
+
+  -----------
+  -- Jumps --
+  -----------
+
+  -- Jump to combined address
+  procedure JP_Instr (Addr : Address) is
+  begin
+    Reg.PC := Addr;
+  end JP_Instr;
+
+  -- Conditional jump to address
+  type Conditional is (NZ, Z, NC, C);
+  procedure JP_Instr (Cond : Conditional; Addr : Address) is
+    Jump : Boolean;
+  begin 
+    case Cond is
+      when NZ => Jump := (Reg.F.Zero_Flag = 2#0#);
+      when Z => Jump := (Reg.F.Zero_Flag = 2#1#);
+      when NC => Jump := (Reg.F.Carry_Flag = 2#0#);
+      when C => Jump := (Reg.F.Carry_Flag = 2#1#);
+    end case;
+    Reg.PC := (if Jump then Addr else Reg.PC);
+  end JP_Instr;
+
+
+  -- Add operand to Reg.PC and jump
+  procedure JR_Instr (Operand : UInt8) is
+    Sub : Boolean := (Operand and 2#10000000#) /= 0;
+    Val : UInt16_Split := (False, 16#00#, (Operand and 2#01111111#));
+  begin
+    if Sub then Reg.PC := Reg.PC - Val.Val - 1;
+           else Reg.PC := Reg.PC + Val.Val;
+    end if;
+  end JR_Instr;
+
+  -- Conditionally add operand to Reg.PC and jump
+  procedure JR_Instr (Cond : Conditional; Operand : UInt8) is
+    Sub : Boolean := (Operand and 2#10000000#) /= 0;
+    Val : UInt16_Split := (False, 16#00#, (Operand and 2#01111111#));
+    Jump : Boolean;
+  begin
+    case Cond is
+      when NZ => Jump := (Reg.F.Zero_Flag = 2#0#);
+      when Z => Jump := (Reg.F.Zero_Flag = 2#1#);
+      when NC => Jump := (Reg.F.Carry_Flag = 2#0#);
+      when C => Jump := (Reg.F.Carry_Flag = 2#1#);
+    end case;
+    if Sub then Reg.PC := (if Jump then Reg.PC - Val.Val - 1 else Reg.PC);
+           else Reg.PC := (if Jump then Reg.PC + Val.Val else Reg.PC);
+    end if;
+  end JR_Instr;
+
+
+  -----------
+  -- Calls --
+  -----------
+
+  procedure CALL_Instr (Addr : Address) is
+  begin
+    WriteDouble (Reg.SP.Val, Reg.PC + 1);
+    Reg.SP.Val := Reg.SP.Val - 1;
+    JP_Instr (Addr);
+  end CALL_Instr;
+
+  procedure CALL_Instr (Cond : Conditional; Addr : Address) is
+    Jump : Boolean;
+  begin
+    case Cond is
+      when NZ => Jump := (Reg.F.Zero_Flag = 2#0#);
+      when Z => Jump := (Reg.F.Zero_Flag = 2#1#);
+      when NC => Jump := (Reg.F.Carry_Flag = 2#0#);
+      when C => Jump := (Reg.F.Carry_Flag = 2#1#);
+    end case;
+    if Jump then 
+      WriteDouble (Reg.SP.Val, Reg.PC + 1);
+      Reg.SP.Val := Reg.SP.Val - 1;
+      JP_Instr (Addr);
+    end if;
+  end CALL_Instr;
+
   ---------------
   -- Execution --
   ---------------
@@ -185,6 +267,19 @@ package body CPU.Instructions is
   procedure Read_Instruction is
   begin
     case MemMap (Reg.PC) is
+      ----------
+      -- Load --
+      ----------
+      
+      when 16#C5# => PUSH_Instr (Reg.BC);
+      when 16#D5# => PUSH_Instr (Reg.DE);
+      when 16#E5# => PUSH_Instr (Reg.HL);
+      when 16#F5# => PUSH_Instr (Reg.AF);
+
+      when 16#C1# => POP_Instr (Reg.BC);
+      when 16#D1# => POP_Instr (Reg.DE);
+      when 16#E1# => POP_Instr (Reg.HL);
+      when 16#F1# => POP_Instr (Reg.AF);
 
       ----------------
       -- Arithmetic --
@@ -299,6 +394,34 @@ package body CPU.Instructions is
       --TODO when 16#35# => DEC_Instr ( (HL) );
       when 16#3B# => DEC_Instr (Reg.SP);
       when 16#3D# => DEC_Instr (Reg.A);
+
+      -----------
+      -- Jumps --
+      -----------
+      
+      when 16#C2# => Reg.PC := Reg.PC + 2; JP_Instr (NZ, ReadDouble (Reg.PC - 1));
+      when 16#C3# => Reg.PC := Reg.PC + 2; JP_Instr (ReadDouble (Reg.PC - 1));
+      when 16#CA# => Reg.PC := Reg.PC + 2; JP_Instr (Z, ReadDouble (Reg.PC - 1));
+      when 16#D2# => Reg.PC := Reg.PC + 2; JP_Instr (NC, ReadDouble (Reg.PC - 1));
+      when 16#DA# => Reg.PC := Reg.PC + 2; JP_Instr (C, ReadDouble (Reg.PC - 1));
+      when 16#E9# => JP_Instr (Reg.HL.Val);
+
+      when 16#18# => Reg.PC := Reg.PC + 1; JR_Instr (ReadByte (Reg.PC));
+      when 16#20# => Reg.PC := Reg.PC + 1; JR_Instr (NZ, ReadByte (Reg.PC));
+      when 16#28# => Reg.PC := Reg.PC + 1; JR_Instr (Z, ReadByte (Reg.PC));
+      when 16#30# => Reg.PC := Reg.PC + 1; JR_Instr (NC, ReadByte (Reg.PC));
+      when 16#38# => Reg.PC := Reg.PC + 1; JR_Instr (C, ReadByte (Reg.PC));
+
+      -----------
+      -- Calls --
+      -----------
+      
+      when 16#C4# => Reg.PC := Reg.PC + 2; Call_Instr (NZ, ReadDouble (Reg.PC - 1));
+      when 16#CC# => Reg.PC := Reg.PC + 2; Call_Instr (Z, ReadDouble (Reg.PC - 1));
+      when 16#CD# => Reg.PC := Reg.PC + 2; Call_Instr (ReadDouble (Reg.PC - 1));
+      when 16#D4# => Reg.PC := Reg.PC + 2; Call_Instr (NC, ReadDouble (Reg.PC - 1));
+      when 16#DC# => Reg.PC := Reg.PC + 2; Call_Instr (C, ReadDouble (Reg.PC - 1));
+
 
       when others => raise Invalid_Instruction_Call_Exception
         with "Instruction not implemented!";

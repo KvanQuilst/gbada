@@ -48,7 +48,7 @@ package body Memory is
   -- Return : The data at the provided Addr
   function ReadDouble (Addr : Address) return UInt16 is
     Val_Addr : Address := ValidateAddress (Addr);
-    Data : UInt16_SPlit := (False,
+    Data : UInt16_Split := (False,
                             (MemMap (Val_Addr + 1)),
                             (MemMap (Val_Addr)));
   begin

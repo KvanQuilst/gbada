@@ -47,16 +47,17 @@ package CPU is
 
   type Registers (Paired : Boolean := False) is 
     record
-      A : Register;
-      F : Register;
       SP : Register16;
       PC : Address;
       case Paired is
         when True =>
+          AF : Register16;
           BC : Register16;
           DE : Register16;
           HL : Register16;
         when False =>
+          A : Register;
+          F : Register;
           B : Register;
           C : Register;
           D : Register;
@@ -68,6 +69,7 @@ package CPU is
       with Unchecked_Union;
 
   for Registers use record
+    AF at 16#0# range 0..15;
     A  at 16#0# range 0..7;
     F  at 16#1# range 0..7;
     BC at 16#2# range 0..15;
