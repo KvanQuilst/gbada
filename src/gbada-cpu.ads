@@ -1,7 +1,7 @@
-with GBADA.Types; use GBADA.Types;
-with Memory; use Memory;
+with Gbada.Types; use Gbada.Types;
+with Gbada.Memory; use Gbada.Memory;
 
-package CPU is
+package Gbada.CPU is
 
   type Register (Flag : Boolean := True) is 
     record
@@ -98,4 +98,4 @@ package CPU is
     PC => 16#0000#
   );
 
-end CPU;
+end Gbada.CPU;

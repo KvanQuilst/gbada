@@ -1,9 +1,6 @@
-with GBADA.Types; use GBADA.Types;
-with Memory; use Memory;
-
 --TODO: Include cycle delay with instructions!
 
-package body CPU.Instructions is
+package body Gbada.CPU.Instructions is
   
   -------------
   -- Helpers --
@@ -635,4 +632,4 @@ package body CPU.Instructions is
     end case;
     Reg.PC := Reg.PC + 1;
   end Read_Instruction;
-end CPU.Instructions;
+end Gbada.CPU.Instructions;

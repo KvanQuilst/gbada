@@ -1,8 +1,9 @@
 with Ada.Text_IO;   use Ada.Text_IO;
-with GBADA.Types;   use GBADA.Types;
-with CPU; use CPU;
-with CPU.Instructions; use CPU.Instructions;
-with Memory; use Memory;
+with Gbada.Types;   use Gbada.Types;
+with Gbada.CPU; use Gbada.CPU;
+with Gbada.CPU.Instructions; use Gbada.CPU.Instructions;
+with Gbada.Memory; use Gbada.Memory;
+with Gbada.CartridgeReader;
 
 procedure Main is
 begin

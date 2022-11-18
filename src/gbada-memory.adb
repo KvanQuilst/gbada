@@ -1,4 +1,4 @@
-package body Memory is
+package body Gbada.Memory is
 
   -- Validate Address
   -- Validate a provded address and convert it to an equivalent or invalid address
@@ -114,4 +114,4 @@ package body Memory is
     MemMap (MemoryLocation'Enum_Rep (Loc)) := Data.Lower;
   end WriteDouble;
 
-end Memory;
+end Gbada.Memory;

@@ -1,6 +1,6 @@
-with GBADA.Types; use GBADA.Types;
+with Gbada.Types; use Gbada.Types;
 
-package Memory is
+package Gbada.Memory is
 
   -- Types --
   subtype Address is UInt16 range 0 .. 16#FFFF#;
@@ -58,4 +58,4 @@ private
 
   Invalid_Memory_Reference_Exception : exception;
 
-end Memory;
+end Gbada.Memory;
