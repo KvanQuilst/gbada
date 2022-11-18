@@ -18,6 +18,123 @@ package body CPU.Instructions is
   ----------
   -- Load --
   ----------
+  
+  -- 8-bit load value of source register into dest register
+  procedure LD_Instr (Dest : out Register; Source : Register) is
+  begin
+    Dest.Val := Source.Val; 
+  end LD_Instr;
+
+  -- 8-bit load value at address into dest register
+  procedure LD_Instr (Dest : out Register; Addr : Address) is
+  begin
+    Dest.Val := ReadByte (Addr);
+  end LD_Instr;
+
+  -- 8-bit load value of source regsiter into address
+  procedure LD_Instr (Addr : Address; Source : Register) is
+  begin
+    WriteByte (Addr, Source.Val);
+  end LD_Instr;
+
+  -- 8-bit load operand into register
+  procedure LD_Instr (Dest : out Register; Operand : UInt8) is
+  begin
+    Dest.Val := Operand;
+  end LD_Instr;
+
+  -- 8-bit load operand into address
+  procedure LD_Instr (Addr : Address; Operand : UInt8) is
+  begin
+    WriteByte (Addr, Operand);
+  end LD_Instr;
+
+  -- 8-bit load $FF00 + Reg.C into A or vice versa
+  type C_IO is (In_C, Out_C);
+  procedure LD_Instr (IO : C_IO) is
+    Addr : UInt16_Split := (False, 16#FF#, Reg.C.Val);
+  begin
+    case IO is
+      when In_C => WriteByte (Addr.Val, Reg.A.Val);
+      when Out_C => Reg.A.Val := ReadByte (Addr.Val);
+    end case;
+  end LD_Instr;
+
+  -- 16-bit load operand into destination register
+  procedure LD_Instr (Dest : out Register16; Operand : UInt16) is
+  begin 
+    Dest.Val := Operand;
+  end LD_Instr;
+
+  -- 16-bit load source register into dest register
+  procedure LD_Instr (Dest : out Register16; Source : Register16) is
+  begin
+    Dest.Val := Source.Val;
+  end LD_Instr;
+
+  -- 16-bit put Reg.SP at addr
+  procedure LD_Instr (Addr : Address) is
+  begin
+    WriteDouble (Addr, Reg.SP.Val);
+  end LD_Instr;
+
+
+  -- 8-bit load (HL) into Reg.A or vice versa and decrement HL
+  type HL_IO is (In_HL, Out_HL);
+  procedure LDD_Instr (IO : HL_IO) is
+  begin
+    case IO is
+      when In_HL => WriteByte (Reg.HL.Val, Reg.A.Val);
+      when Out_HL => Reg.A.Val := ReadByte (Reg.HL.Val);
+    end case;
+
+    --TODO: Carry Flags
+    Reg.F.Subtraction_Flag := 2#1#;
+    Reg.HL.Val := Reg.HL.Val - 1;
+    Reg.F.Zero_Flag := (if Reg.HL.Val = 0 then 2#1# else 2#0#);
+  end LDD_Instr;
+
+
+  -- 8-bit load (HL) into Reg.A or vice versa and decrement HL
+  procedure LDI_Instr (IO : HL_IO) is
+  begin
+    case IO is
+      when In_HL => WriteByte (Reg.HL.Val, Reg.A.Val);
+      when Out_HL => Reg.A.Val := ReadByte (Reg.HL.Val);
+    end case;
+
+    Reg.F.HalfCarry_Flag := (if Reg.HL.Val < 16#FFF# then 2#1# else 2#0#);
+    Reg.F.Subtraction_Flag := 2#0#;
+    Reg.HL.Val := Reg.HL.Val + 1;
+    Reg.F.Zero_Flag := (if Reg.HL.Val = 0 then 2#1# else 2#0#);
+  end LDI_Instr;
+
+
+  -- 8-bit load $FF00 + operand into Reg.A or vice versa
+  type FF00_IO is (In_FF00, Out_FF00);
+  procedure LDH_Instr (Operand : UInt8; IO : FF00_IO) is
+    Addr : UInt16_Split := (False, 16#FF#, Operand);
+  begin
+    case IO is
+      when In_FF00 => WriteByte (Addr.Val, Reg.A.Val);
+      when Out_FF00 => Reg.A.Val := ReadByte (Addr.Val);
+    end case;
+  end LDH_Instr;
+
+
+  -- 16-bit load Reg.SP + operand into Reg.HL
+  procedure LDHL_Instr (Operand : UInt8) is
+    Sub : Boolean := (Operand and 2#10000000#) > 0;
+    Val : UInt16_Split := (False, 16#00#, (Operand and 2#01111111#));
+  begin
+    --TODO: Carry Flags
+    Reg.F.Subtraction_Flag := 2#0#;
+    Reg.F.Zero_Flag := 2#0#;
+    if Sub then Reg.HL.Val := Reg.SP.Val - Val.Val - 1;
+           else Reg.HL.Val := Reg.SP.Val + Val.Val;
+    end if;
+  end LDHL_Instr;
+
 
   -- 16-bit push register onto stack
   procedure PUSH_Instr (Source : Register16) is
@@ -26,8 +143,9 @@ package body CPU.Instructions is
     Reg.SP.Val := Reg.SP.Val - 2;
   end PUSH_Instr;
 
+
   -- 16-bit pop stack into register
-  procedure POP_Instr (Dest : in out Register16) is
+  procedure POP_Instr (Dest : out Register16) is
   begin
     Dest.Val := ReadDouble (Reg.SP.Val);
     Reg.SP.Val := Reg.SP.Val + 2;
@@ -271,6 +389,96 @@ package body CPU.Instructions is
       -- Load --
       ----------
       
+      when 16#01# => Reg.PC := Reg.PC + 2; LD_Instr (Reg.BC, ReadDouble (Reg.PC - 1));
+      when 16#02# => LD_Instr (Reg.BC.Val, Reg.A);
+      when 16#08# => Reg.PC := Reg.PC + 2; LD_Instr (Reg.PC - 1);
+      when 16#0A# => LD_Instr (Reg.A, Reg.BC.Val);
+      when 16#11# => Reg.PC := Reg.PC + 2; LD_Instr (Reg.DE, ReadDouble (Reg.PC - 1));
+      when 16#12# => LD_Instr (Reg.DE.Val , Reg.A);
+      when 16#1A# => LD_Instr (Reg.A, Reg.DE.Val);
+      when 16#21# => Reg.PC := Reg.PC + 2; LD_Instr (Reg.HL, ReadDouble (Reg.PC - 1));
+      when 16#31# => Reg.PC := Reg.PC + 2; LD_Instr (Reg.SP, ReadDouble (Reg.PC - 1));
+      when 16#36# => Reg.PC := Reg.PC + 1; LD_Instr (Reg.HL.Val, ReadByte (Reg.PC));
+      when 16#3E# => Reg.PC := Reg.PC + 1; LD_Instr (Reg.A, ReadByte (Reg.PC));
+      when 16#40# => LD_Instr (Reg.B, Reg.B);
+      when 16#41# => LD_Instr (Reg.B, Reg.C);
+      when 16#42# => LD_Instr (Reg.B, Reg.D);
+      when 16#43# => LD_Instr (Reg.B, Reg.E);
+      when 16#44# => LD_Instr (Reg.B, Reg.H);
+      when 16#45# => LD_Instr (Reg.B, Reg.L);
+      when 16#46# => LD_Instr (Reg.B, Reg.HL.Val);
+      when 16#47# => LD_Instr (Reg.B, Reg.A);
+      when 16#48# => LD_Instr (Reg.C, Reg.B);
+      when 16#49# => LD_Instr (Reg.C, Reg.C);
+      when 16#4A# => LD_Instr (Reg.C, Reg.D);
+      when 16#4B# => LD_Instr (Reg.C, Reg.E);
+      when 16#4C# => LD_Instr (Reg.C, Reg.H);
+      when 16#4D# => LD_Instr (Reg.C, Reg.L);
+      when 16#4E# => LD_Instr (Reg.C, Reg.HL.Val);
+      when 16#4F# => LD_Instr (Reg.C, Reg.A);
+      when 16#50# => LD_Instr (Reg.D, Reg.B);
+      when 16#51# => LD_Instr (Reg.D, Reg.C);
+      when 16#52# => LD_Instr (Reg.D, Reg.D);
+      when 16#53# => LD_Instr (Reg.D, Reg.E);
+      when 16#54# => LD_Instr (Reg.D, Reg.H);
+      when 16#55# => LD_Instr (Reg.D, Reg.L);
+      when 16#56# => LD_Instr (Reg.D, Reg.HL.Val);
+      when 16#57# => LD_Instr (Reg.D, Reg.A);
+      when 16#58# => LD_Instr (Reg.E, Reg.B);
+      when 16#59# => LD_Instr (Reg.E, Reg.C);
+      when 16#5A# => LD_Instr (Reg.E, Reg.D);
+      when 16#5B# => LD_Instr (Reg.E, Reg.E);
+      when 16#5C# => LD_Instr (Reg.E, Reg.H);
+      when 16#5D# => LD_Instr (Reg.E, Reg.L);
+      when 16#5E# => LD_Instr (Reg.E, Reg.HL.Val);
+      when 16#5F# => LD_Instr (Reg.E, Reg.A);
+      when 16#60# => LD_Instr (Reg.H, Reg.B);
+      when 16#61# => LD_Instr (Reg.H, Reg.C);
+      when 16#62# => LD_Instr (Reg.H, Reg.D);
+      when 16#63# => LD_Instr (Reg.H, Reg.E);
+      when 16#64# => LD_Instr (Reg.H, Reg.H);
+      when 16#65# => LD_Instr (Reg.H, Reg.L);
+      when 16#66# => LD_Instr (Reg.H, Reg.HL.Val);
+      when 16#67# => LD_Instr (Reg.H, Reg.A);
+      when 16#68# => LD_Instr (Reg.L, Reg.B);
+      when 16#69# => LD_Instr (Reg.L, Reg.C);
+      when 16#6A# => LD_Instr (Reg.L, Reg.D);
+      when 16#6B# => LD_Instr (Reg.L, Reg.E);
+      when 16#6C# => LD_Instr (Reg.L, Reg.H);
+      when 16#6D# => LD_Instr (Reg.L, Reg.L);
+      when 16#6E# => LD_Instr (Reg.L, Reg.HL.Val);
+      when 16#70# => LD_Instr (Reg.HL.Val, Reg.B);
+      when 16#71# => LD_Instr (Reg.HL.Val, Reg.C);
+      when 16#72# => LD_Instr (Reg.HL.Val, Reg.D);
+      when 16#73# => LD_Instr (Reg.HL.Val, Reg.E);
+      when 16#74# => LD_Instr (Reg.HL.Val, Reg.H);
+      when 16#75# => LD_Instr (Reg.HL.Val, Reg.L);
+      when 16#77# => LD_Instr (Reg.HL.Val, Reg.A);
+      when 16#78# => LD_Instr (Reg.A, Reg.B);
+      when 16#79# => LD_Instr (Reg.A, Reg.C);
+      when 16#7A# => LD_Instr (Reg.A, Reg.D);
+      when 16#7B# => LD_Instr (Reg.A, Reg.E);
+      when 16#7C# => LD_Instr (Reg.A, Reg.H);
+      when 16#7D# => LD_Instr (Reg.A, Reg.L);
+      when 16#7E# => LD_Instr (Reg.A, Reg.HL.Val);
+      when 16#7F# => LD_Instr (Reg.A, Reg.A);
+      when 16#E2# => LD_Instr (In_C);
+      when 16#EA# => Reg.PC := Reg.PC + 2; LD_Instr (ReadDouble (Reg.PC - 1), Reg.A);
+      when 16#F2# => LD_Instr (Out_C);
+      when 16#F9# => LD_Instr (Reg.SP, Reg.HL);
+      when 16#FA# => Reg.PC := Reg.PC + 2; LD_Instr (Reg.A, ReadByte (ReadDouble (Reg.PC - 1)));
+      
+      when 16#32# => LDD_Instr (In_HL);
+      when 16#3A# => LDD_Instr (Out_HL);
+
+      when 16#22# => LDI_Instr (In_HL);
+      when 16#2A# => LDI_Instr (Out_HL);
+
+      when 16#E0# => Reg.PC := Reg.PC + 1; LDH_Instr (ReadByte (Reg.PC), In_FF00);
+      when 16#F0# => Reg.PC := Reg.PC + 1; LDH_Instr (ReadByte (Reg.PC), Out_FF00);
+
+      when 16#F8# => Reg.PC := Reg.PC + 1; LDHL_Instr (ReadByte (Reg.PC));
+      
       when 16#C5# => PUSH_Instr (Reg.BC);
       when 16#D5# => PUSH_Instr (Reg.DE);
       when 16#E5# => PUSH_Instr (Reg.HL);
@@ -421,7 +629,6 @@ package body CPU.Instructions is
       when 16#CD# => Reg.PC := Reg.PC + 2; Call_Instr (ReadDouble (Reg.PC - 1));
       when 16#D4# => Reg.PC := Reg.PC + 2; Call_Instr (NC, ReadDouble (Reg.PC - 1));
       when 16#DC# => Reg.PC := Reg.PC + 2; Call_Instr (C, ReadDouble (Reg.PC - 1));
-
 
       when others => raise Invalid_Instruction_Call_Exception
         with "Instruction not implemented!";
