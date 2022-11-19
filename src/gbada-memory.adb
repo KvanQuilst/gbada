@@ -49,8 +49,8 @@ package body Gbada.Memory is
   function ReadDouble (Addr : Address) return UInt16 is
     Val_Addr : Address := ValidateAddress (Addr);
     Data : UInt16_Split := (False,
-                            (MemMap (Val_Addr + 1)),
-                            (MemMap (Val_Addr)));
+                            (MemMap (Val_Addr)),
+                            (MemMap (Val_Addr + 1)));
   begin
     return Data.Val;
   end ReadDouble;
@@ -62,8 +62,8 @@ package body Gbada.Memory is
   -- Return : The data at the provided location
   function ReadDouble (Loc : MemoryLocation) return UInt16 is
     Data : UInt16_Split := (False,
-                            (MemMap (MemoryLocation'Enum_Rep (Loc) + 1)),
-                            (MemMap (MemoryLocation'Enum_Rep (Loc))));
+                            (MemMap (MemoryLocation'Enum_Rep (Loc))),
+                            (MemMap (MemoryLocation'Enum_Rep (Loc) + 1)));
   begin
     return Data.Val;
   end ReadDouble;

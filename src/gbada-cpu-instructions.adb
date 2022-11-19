@@ -1,3 +1,4 @@
+with Ada.Text_IO; use Ada.Text_IO;
 --TODO: Include cycle delay with instructions!
 
 package body Gbada.CPU.Instructions is
@@ -262,6 +263,14 @@ package body Gbada.CPU.Instructions is
     Reg.F.Zero_Flag := (if R = 16#00# then 2#1# else 2#0#);
   end CP_Instr;
 
+  procedure CP_Instr (Operand : UInt8) is
+    R : UInt8 := Reg.A.Val - Operand;
+  begin
+    --TODO: Carry Flags
+    Reg.F.Subtraction_Flag := 2#1#;
+    Reg.F.Zero_Flag := (if R = 16#00# then 2#1# else 2#0#);
+  end CP_Instr;
+
 
   -- 8-bit increment register operand
   procedure INC_Instr (Operand : in out Register) is
@@ -291,9 +300,18 @@ package body Gbada.CPU.Instructions is
   -- 16-bit decrement register operand
   procedure DEC_Instr (Operand : in out Register16) is
   begin
-    Operand.Val := Operand.Val + 1;
+    Operand.Val := Operand.Val - 1;
   end DEC_Instr;
 
+
+  ----------
+  -- Misc --
+  ----------
+
+  procedure NOP_Instr is
+  begin
+    null;
+  end NOP_Instr;
 
   -----------
   -- Jumps --
@@ -323,9 +341,9 @@ package body Gbada.CPU.Instructions is
   -- Add operand to Reg.PC and jump
   procedure JR_Instr (Operand : UInt8) is
     Sub : Boolean := (Operand and 2#10000000#) /= 0;
-    Val : UInt16_Split := (False, 16#00#, (Operand and 2#01111111#));
+    Val : UInt16_Split := (False, (Operand and 2#01111111#), 16#00#);
   begin
-    if Sub then Reg.PC := Reg.PC - Val.Val - 1;
+    if Sub then Reg.PC := Reg.PC - (128 - Val.Val + 1);
            else Reg.PC := Reg.PC + Val.Val;
     end if;
   end JR_Instr;
@@ -333,7 +351,7 @@ package body Gbada.CPU.Instructions is
   -- Conditionally add operand to Reg.PC and jump
   procedure JR_Instr (Cond : Conditional; Operand : UInt8) is
     Sub : Boolean := (Operand and 2#10000000#) /= 0;
-    Val : UInt16_Split := (False, 16#00#, (Operand and 2#01111111#));
+    Val : UInt16_Split := (False, (Operand and 2#01111111#), 16#00#);
     Jump : Boolean;
   begin
     case Cond is
@@ -342,7 +360,7 @@ package body Gbada.CPU.Instructions is
       when NC => Jump := (Reg.F.Carry_Flag = 2#0#);
       when C => Jump := (Reg.F.Carry_Flag = 2#1#);
     end case;
-    if Sub then Reg.PC := (if Jump then Reg.PC - Val.Val - 1 else Reg.PC);
+    if Sub then Reg.PC := (if Jump then Reg.PC - (128 - Val.Val + 1) else Reg.PC);
            else Reg.PC := (if Jump then Reg.PC + Val.Val else Reg.PC);
     end if;
   end JR_Instr;
@@ -380,23 +398,67 @@ package body Gbada.CPU.Instructions is
   ---------------
 
   procedure Read_Instruction is
+    ByteCode : UInt8 := ReadByte (Reg.PC);
+    Operand8 : UInt8;
+    Operand16 : UInt16;
   begin
-    case MemMap (Reg.PC) is
-      ----------
-      -- Load --
-      ----------
-      
-      when 16#01# => Reg.PC := Reg.PC + 2; LD_Instr (Reg.BC, ReadDouble (Reg.PC - 1));
+    Operand8 := (if Instr_Info (ByteCode).Operands = 2
+                 then ReadByte (Reg.PC + 1) else 0);
+    Operand16 := (if Instr_Info (ByteCode).Operands = 3
+                  then ReadDouble (Reg.PC + 1) else 0);
+
+    case ByteCode is
+      when 16#00# => NOP_Instr;
+      when 16#01# => LD_Instr (Reg.BC, Operand16);
       when 16#02# => LD_Instr (Reg.BC.Val, Reg.A);
-      when 16#08# => Reg.PC := Reg.PC + 2; LD_Instr (Reg.PC - 1);
+      when 16#03# => INC_Instr (Reg.BC);
+      when 16#04# => INC_Instr (Reg.B);
+      when 16#05# => DEC_Instr (Reg.B);
+      when 16#06# => LD_Instr (Reg.B, Operand8);
+      when 16#08# => LD_Instr (Operand16);
+      when 16#09# => ADD_Instr (Reg.BC);
       when 16#0A# => LD_Instr (Reg.A, Reg.BC.Val);
-      when 16#11# => Reg.PC := Reg.PC + 2; LD_Instr (Reg.DE, ReadDouble (Reg.PC - 1));
+      when 16#0B# => DEC_Instr (Reg.BC);
+      when 16#0C# => INC_Instr (Reg.C);
+      when 16#0D# => DEC_Instr (Reg.C);
+      when 16#0E# => LD_Instr (Reg.C, Operand8);
+      when 16#11# => LD_Instr (Reg.DE, Operand16);
       when 16#12# => LD_Instr (Reg.DE.Val , Reg.A);
+      when 16#13# => INC_Instr (Reg.DE);
+      when 16#14# => INC_Instr (Reg.D);
+      when 16#15# => DEC_Instr (Reg.D);
+      when 16#18# => JR_Instr (Operand8);
+      when 16#19# => ADD_Instr (Reg.DE);
       when 16#1A# => LD_Instr (Reg.A, Reg.DE.Val);
-      when 16#21# => Reg.PC := Reg.PC + 2; LD_Instr (Reg.HL, ReadDouble (Reg.PC - 1));
-      when 16#31# => Reg.PC := Reg.PC + 2; LD_Instr (Reg.SP, ReadDouble (Reg.PC - 1));
-      when 16#36# => Reg.PC := Reg.PC + 1; LD_Instr (Reg.HL.Val, ReadByte (Reg.PC));
-      when 16#3E# => Reg.PC := Reg.PC + 1; LD_Instr (Reg.A, ReadByte (Reg.PC));
+      when 16#1B# => DEC_Instr (Reg.DE);
+      when 16#1C# => INC_Instr (Reg.E);
+      when 16#1D# => DEC_Instr (Reg.E);
+      when 16#20# => JR_Instr (NZ, Operand8);
+      when 16#21# => LD_Instr (Reg.HL, Operand16);
+      when 16#22# => LDI_Instr (In_HL);
+      when 16#23# => INC_Instr (Reg.HL);
+      when 16#24# => INC_Instr (Reg.H);
+      when 16#25# => DEC_Instr (Reg.H);
+      when 16#28# => JR_Instr (Z, Operand8);
+      when 16#29# => ADD_Instr (Reg.HL);
+      when 16#2A# => LDI_Instr (Out_HL);
+      when 16#2B# => DEC_Instr (Reg.HL);
+      when 16#2C# => INC_Instr (Reg.L);
+      when 16#2D# => DEC_Instr (Reg.L);
+      when 16#30# => JR_Instr (NC, Operand8);
+      when 16#31# => LD_Instr (Reg.SP, Operand16);
+      when 16#32# => LDD_Instr (In_HL);
+      when 16#33# => INC_Instr (Reg.SP);
+      --TODO when 16#34# => INC_Instr ( (HL) );
+      --TODO when 16#35# => DEC_Instr ( (HL) );
+      when 16#36# => LD_Instr (Reg.HL.Val, Operand8);
+      when 16#38# => JR_Instr (C, Operand8);
+      when 16#39# => ADD_Instr (Reg.SP);
+      when 16#3A# => LDD_Instr (Out_HL);
+      when 16#3B# => DEC_Instr (Reg.SP);
+      when 16#3C# => INC_Instr (Reg.A);
+      when 16#3D# => DEC_Instr (Reg.A);
+      when 16#3E# => LD_Instr (Reg.A, Operand8);
       when 16#40# => LD_Instr (Reg.B, Reg.B);
       when 16#41# => LD_Instr (Reg.B, Reg.C);
       when 16#42# => LD_Instr (Reg.B, Reg.D);
@@ -459,41 +521,6 @@ package body Gbada.CPU.Instructions is
       when 16#7D# => LD_Instr (Reg.A, Reg.L);
       when 16#7E# => LD_Instr (Reg.A, Reg.HL.Val);
       when 16#7F# => LD_Instr (Reg.A, Reg.A);
-      when 16#E2# => LD_Instr (In_C);
-      when 16#EA# => Reg.PC := Reg.PC + 2; LD_Instr (ReadDouble (Reg.PC - 1), Reg.A);
-      when 16#F2# => LD_Instr (Out_C);
-      when 16#F9# => LD_Instr (Reg.SP, Reg.HL);
-      when 16#FA# => Reg.PC := Reg.PC + 2; LD_Instr (Reg.A, ReadByte (ReadDouble (Reg.PC - 1)));
-      
-      when 16#32# => LDD_Instr (In_HL);
-      when 16#3A# => LDD_Instr (Out_HL);
-
-      when 16#22# => LDI_Instr (In_HL);
-      when 16#2A# => LDI_Instr (Out_HL);
-
-      when 16#E0# => Reg.PC := Reg.PC + 1; LDH_Instr (ReadByte (Reg.PC), In_FF00);
-      when 16#F0# => Reg.PC := Reg.PC + 1; LDH_Instr (ReadByte (Reg.PC), Out_FF00);
-
-      when 16#F8# => Reg.PC := Reg.PC + 1; LDHL_Instr (ReadByte (Reg.PC));
-      
-      when 16#C5# => PUSH_Instr (Reg.BC);
-      when 16#D5# => PUSH_Instr (Reg.DE);
-      when 16#E5# => PUSH_Instr (Reg.HL);
-      when 16#F5# => PUSH_Instr (Reg.AF);
-
-      when 16#C1# => POP_Instr (Reg.BC);
-      when 16#D1# => POP_Instr (Reg.DE);
-      when 16#E1# => POP_Instr (Reg.HL);
-      when 16#F1# => POP_Instr (Reg.AF);
-
-      ----------------
-      -- Arithmetic --
-      ----------------
-
-      when 16#09# => ADD_Instr (Reg.BC);
-      when 16#19# => ADD_Instr (Reg.DE);
-      when 16#29# => ADD_Instr (Reg.HL);
-      when 16#39# => ADD_Instr (Reg.SP);
       when 16#80# => ADD_Instr (Reg.B);
       when 16#81# => ADD_Instr (Reg.C);
       when 16#82# => ADD_Instr (Reg.D);
@@ -502,8 +529,6 @@ package body Gbada.CPU.Instructions is
       when 16#85# => ADD_Instr (Reg.L);
       when 16#86# => ADD_Instr (ReadByte (Reg.HL.Val));
       when 16#87# => ADD_Instr (Reg.A);
-      when 16#E8# => Reg.PC := Reg.PC + 1; ADD_Instr (ReadByte (Reg.PC)); 
-
       when 16#88# => ADC_Instr (Reg.B);
       when 16#89# => ADC_Instr (Reg.C);
       when 16#8A# => ADC_Instr (Reg.D);
@@ -512,8 +537,6 @@ package body Gbada.CPU.Instructions is
       when 16#8D# => ADC_Instr (Reg.L);
       --TODO when 16#8E# => ADC_Instr (ReadByte (Reg.HL.Val));
       when 16#8F# => ADC_Instr (Reg.A);
-      --TODO when 16#CE# => Reg.PC := Reg.PC + 1; ADC_Instr (ReadByte (Reg.PC));
-      
       when 16#90# => SUB_Instr (Reg.B);
       when 16#91# => SUB_Instr (Reg.C);
       when 16#92# => SUB_Instr (Reg.D);
@@ -522,8 +545,6 @@ package body Gbada.CPU.Instructions is
       when 16#95# => SUB_Instr (Reg.L);
       --TODO when 16#96# => SUB_Instr (ReadByte (Reg.HL.Val));
       when 16#97# => SUB_Instr (Reg.A);
-      -- TODO when 16#D6# => Reg.PC := Reg.PC + 1; SUB_Instr (ReadByte (Reg.PC));
-      
       when 16#98# => SBC_Instr (Reg.B);
       when 16#99# => SBC_Instr (Reg.C);
       when 16#9A# => SBC_Instr (Reg.D);
@@ -532,8 +553,6 @@ package body Gbada.CPU.Instructions is
       when 16#9D# => SBC_Instr (Reg.L);
       --TODO when 16#9E# => SBC_Instr (ReadByte (Reg.HL.Val));
       when 16#9F# => SBC_Instr (Reg.A);
-      --TODO when 16#DE# => Reg.PC := Reg.PC + 1; SBC_Instr (ReadByte (Reg.PC));
-      
       when 16#A0# => AND_Instr (Reg.B);
       when 16#A1# => AND_Instr (Reg.C);
       when 16#A2# => AND_Instr (Reg.D);
@@ -542,18 +561,6 @@ package body Gbada.CPU.Instructions is
       when 16#A5# => AND_Instr (Reg.L);
       --TODO when 16#A6# => AND_Instr (ReadByte (Reg.HL.Val));
       when 16#A7# => AND_Instr (Reg.A);
-      --TODO when 16#E6# => Reg.PC := Reg.PC + 1; AND_Instr (ReadByte (Reg.PC));
-      
-      when 16#B0# => OR_Instr (Reg.B);
-      when 16#B1# => OR_Instr (Reg.C);
-      when 16#B2# => OR_Instr (Reg.D);
-      when 16#B3# => OR_Instr (Reg.E);
-      when 16#B4# => OR_Instr (Reg.H);
-      when 16#B5# => OR_Instr (Reg.L);
-      --TODO when 16#B6# => OR_Instr (ReadByte (Reg.HL.Val));
-      when 16#B7# => OR_Instr (Reg.A);
-      --TODO when 16#F6# => Reg.PC := Reg.PC + 1; OR_Instr (ReadByte (Reg.PC));
-      
       when 16#A8# => XOR_Instr (Reg.B);
       when 16#A9# => XOR_Instr (Reg.C);
       when 16#AA# => XOR_Instr (Reg.D);
@@ -562,8 +569,14 @@ package body Gbada.CPU.Instructions is
       when 16#AD# => XOR_Instr (Reg.L);
       --TODO when 16#AE# => XOR_Instr (ReadByte (Reg.HL.Val));
       when 16#AF# => XOR_Instr (Reg.A);
-      -- TODO when 16#EE# => Reg.PC := Reg.PC + 1; XOR_Instr (ReadByte (Reg.PC));
-
+      when 16#B0# => OR_Instr (Reg.B);
+      when 16#B1# => OR_Instr (Reg.C);
+      when 16#B2# => OR_Instr (Reg.D);
+      when 16#B3# => OR_Instr (Reg.E);
+      when 16#B4# => OR_Instr (Reg.H);
+      when 16#B5# => OR_Instr (Reg.L);
+      --TODO when 16#B6# => OR_Instr (ReadByte (Reg.HL.Val));
+      when 16#B7# => OR_Instr (Reg.A);
       when 16#B8# => CP_Instr (Reg.B);
       when 16#B9# => CP_Instr (Reg.C);
       when 16#BA# => CP_Instr (Reg.D);
@@ -572,64 +585,61 @@ package body Gbada.CPU.Instructions is
       when 16#BD# => CP_Instr (Reg.L);
       --TODO when 16#BE# => CP_Instr (ReadByte (Reg.HL.Val));
       when 16#BF# => CP_Instr (Reg.A);
-      --TODO when 16#FE# => Reg.PC := Reg.PC + 1; CP_Instr (ReadByte (Reg.PC));
-
-      when 16#03# => INC_Instr (Reg.BC);
-      when 16#04# => INC_Instr (Reg.B);
-      when 16#0C# => INC_Instr (Reg.C);
-      when 16#13# => INC_Instr (Reg.DE);
-      when 16#14# => INC_Instr (Reg.D);
-      when 16#1C# => INC_Instr (Reg.E);
-      when 16#23# => INC_Instr (Reg.HL);
-      when 16#24# => INC_Instr (Reg.H);
-      when 16#2C# => INC_Instr (Reg.L);
-      when 16#33# => INC_Instr (Reg.SP);
-      --TODO when 16#34# => INC_Instr ( (HL) );
-      when 16#3C# => INC_Instr (Reg.A);
-
-      when 16#05# => DEC_Instr (Reg.B);
-      when 16#0B# => DEC_Instr (Reg.BC);
-      when 16#0D# => DEC_Instr (Reg.C);
-      when 16#15# => DEC_Instr (Reg.D);
-      when 16#1B# => DEC_Instr (Reg.DE);
-      when 16#1D# => DEC_Instr (Reg.E);
-      when 16#25# => DEC_Instr (Reg.H);
-      when 16#2B# => DEC_Instr (Reg.HL);
-      when 16#2D# => DEC_Instr (Reg.L);
-      --TODO when 16#35# => DEC_Instr ( (HL) );
-      when 16#3B# => DEC_Instr (Reg.SP);
-      when 16#3D# => DEC_Instr (Reg.A);
-
-      -----------
-      -- Jumps --
-      -----------
-      
-      when 16#C2# => Reg.PC := Reg.PC + 2; JP_Instr (NZ, ReadDouble (Reg.PC - 1));
-      when 16#C3# => Reg.PC := Reg.PC + 2; JP_Instr (ReadDouble (Reg.PC - 1));
-      when 16#CA# => Reg.PC := Reg.PC + 2; JP_Instr (Z, ReadDouble (Reg.PC - 1));
-      when 16#D2# => Reg.PC := Reg.PC + 2; JP_Instr (NC, ReadDouble (Reg.PC - 1));
-      when 16#DA# => Reg.PC := Reg.PC + 2; JP_Instr (C, ReadDouble (Reg.PC - 1));
+      when 16#E8# => ADD_Instr (Operand8); 
+      when 16#C1# => POP_Instr (Reg.BC);
+      when 16#C2# => JP_Instr (NZ, Operand16);
+      when 16#C3# => JP_Instr (Operand16);
+      when 16#C4# => Call_Instr (NZ, Operand16);
+      when 16#C5# => PUSH_Instr (Reg.BC);
+      when 16#CA# => JP_Instr (Z, Operand16);
+      when 16#CC# => Call_Instr (Z, Operand16);
+      when 16#CD# => Call_Instr (Operand16);
+      --TODO when 16#CE# => Reg.PC := Reg.PC + 1; ADC_Instr (ReadByte (Reg.PC));
+      when 16#D1# => POP_Instr (Reg.DE);
+      when 16#D2# => JP_Instr (NC, Operand16);
+      when 16#D4# => Call_Instr (NC, Operand16);
+      when 16#D5# => PUSH_Instr (Reg.DE);
+      --TODO when 16#D6# => Reg.PC := Reg.PC + 1; SUB_Instr (ReadByte (Reg.PC));
+      when 16#DA# => JP_Instr (C, Operand16);
+      when 16#DC# => Call_Instr (C, Operand16);
+      --TODO when 16#DE# => Reg.PC := Reg.PC + 1; SBC_Instr (ReadByte (Reg.PC));
+      when 16#E0# => LDH_Instr (Operand8, In_FF00);
+      when 16#E1# => POP_Instr (Reg.HL);
+      when 16#E2# => LD_Instr (In_C);
+      when 16#E5# => PUSH_Instr (Reg.HL);
+      --TODO when 16#E6# => Reg.PC := Reg.PC + 1; AND_Instr (ReadByte (Reg.PC));
       when 16#E9# => JP_Instr (Reg.HL.Val);
-
-      when 16#18# => Reg.PC := Reg.PC + 1; JR_Instr (ReadByte (Reg.PC));
-      when 16#20# => Reg.PC := Reg.PC + 1; JR_Instr (NZ, ReadByte (Reg.PC));
-      when 16#28# => Reg.PC := Reg.PC + 1; JR_Instr (Z, ReadByte (Reg.PC));
-      when 16#30# => Reg.PC := Reg.PC + 1; JR_Instr (NC, ReadByte (Reg.PC));
-      when 16#38# => Reg.PC := Reg.PC + 1; JR_Instr (C, ReadByte (Reg.PC));
-
-      -----------
-      -- Calls --
-      -----------
-      
-      when 16#C4# => Reg.PC := Reg.PC + 2; Call_Instr (NZ, ReadDouble (Reg.PC - 1));
-      when 16#CC# => Reg.PC := Reg.PC + 2; Call_Instr (Z, ReadDouble (Reg.PC - 1));
-      when 16#CD# => Reg.PC := Reg.PC + 2; Call_Instr (ReadDouble (Reg.PC - 1));
-      when 16#D4# => Reg.PC := Reg.PC + 2; Call_Instr (NC, ReadDouble (Reg.PC - 1));
-      when 16#DC# => Reg.PC := Reg.PC + 2; Call_Instr (C, ReadDouble (Reg.PC - 1));
+      when 16#EA# => LD_Instr (Operand16, Reg.A);
+      --TODO when 16#EE# => XOR_Instr (Operand8);
+      when 16#F0# => LDH_Instr (Operand8, Out_FF00);
+      when 16#F1# => POP_Instr (Reg.AF);
+      when 16#F2# => LD_Instr (Out_C);
+      when 16#F5# => PUSH_Instr (Reg.AF);
+      --TODO when 16#F6# => Reg.PC := Reg.PC + 1; OR_Instr (ReadByte (Reg.PC));
+      when 16#F8# => LDHL_Instr (Operand8);
+      when 16#F9# => LD_Instr (Reg.SP, Reg.HL);
+      when 16#FA# => LD_Instr (Reg.A, ReadByte (Operand16));
+      when 16#FE# => CP_Instr (Operand8);
 
       when others => raise Invalid_Instruction_Call_Exception
-        with "Instruction not implemented!";
+                      with "Instruction not implemented!";
     end case;
-    Reg.PC := Reg.PC + 1;
+
+    case ByteCode is
+      when 16#18# | 16#20# | 16#28# | 16#30# | 16#38# | 
+           16#C0# | 16#C2#..16#C4# | 16#C7#..16#CA# | 16#CC# |
+           16#CD# | 16#CF# | 16#D0# | 16#D2# | 16#D4# | 
+           16#D7#..16#DA# | 16#DC# | 16#DF# | 16#E7# | 16#E9# | 
+           16#EF# | 16#F7# | 16#FF#
+        => Reg.PC := Reg.PC + 1;
+      when others => Reg.PC := Reg.PC + Instr_Info (ByteCode).Operands;
+    end case;
   end Read_Instruction;
+
+
+  function Instruction_String return String is
+  begin
+    return Instr_Info (ReadByte (Reg.PC)).Image;
+  end Instruction_String;
+
 end Gbada.CPU.Instructions;

@@ -49,13 +49,9 @@ package Gbada.Memory is
   procedure WriteDouble (Loc : MemoryLocation;
                          Val : UInt16);
 
-  -- Declarations --
-  MemMap : MemorySpace;
-
 private
 
-  function ValidateAddress (Addr : Address) return Address;
-
+  MemMap : MemorySpace;
   Invalid_Memory_Reference_Exception : exception;
 
 end Gbada.Memory;

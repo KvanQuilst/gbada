@@ -41,8 +41,8 @@ package Gbada.CPU is
 
   for Register16 use record
     Val at 0 range 0..15;
-    Upper at 0 range 0..7;
-    Lower at 1 range 0..7;
+    Lower at 0 range 0..7;
+    Upper at 1 range 0..7;
   end record;
 
   type Registers (Paired : Boolean := False) is 
@@ -70,32 +70,33 @@ package Gbada.CPU is
 
   for Registers use record
     AF at 16#0# range 0..15;
-    A  at 16#0# range 0..7;
-    F  at 16#1# range 0..7;
+    A  at 16#1# range 0..7;
+    F  at 16#0# range 0..7;
     BC at 16#2# range 0..15;
-    B  at 16#2# range 0..7;
-    C  at 16#3# range 0..7;
+    B  at 16#3# range 0..7;
+    C  at 16#2# range 0..7;
     DE at 16#4# range 0..15;
-    D  at 16#4# range 0..7;
-    E  at 16#5# range 0..7;
+    D  at 16#5# range 0..7;
+    E  at 16#4# range 0..7;
     HL at 16#6# range 0..15;
-    H  at 16#6# range 0..7;
-    L  at 16#7# range 0..7;
+    H  at 16#7# range 0..7;
+    L  at 16#6# range 0..7;
     SP at 16#8# range 0..15;
     PC at 16#10# range 0..15;
   end record;
 
-  Reg : Registers := (Paired => False,
-    A => (False, 16#00#),
-    F => (False, 16#00#),
-    B => (False, 16#00#),
-    C => (False, 16#00#),
-    D => (False, 16#00#),
-    E => (False, 16#00#),
-    H => (False, 16#00#),
-    L => (False, 16#00#),
-    SP => (True, 16#0000#),
-    PC => 16#0000#
+  Reg : Registers := (Paired => True,
+    AF => (True, 16#01B0#),
+    BC => (True, 16#0013#),
+    DE => (True, 16#00D8#),
+    HL => (True, 16#014D#),
+    SP => (True, 16#FFFF#),
+    PC => 16#0150#
   );
+
+  type Register_Name is (A, B, C, D, E, F, H, L, AF, BC, DE, HL, SP, PC);
+  procedure Print_Register (R : Register_Name); 
+  
+  procedure Print_Registers (Header : Boolean);
 
 end Gbada.CPU;

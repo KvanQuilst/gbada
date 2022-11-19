@@ -1,3 +1,5 @@
+with Ada.Text_IO;
+
 package Gbada.Types is
 
   type Bit is mod 2**1;
@@ -18,5 +20,8 @@ package Gbada.Types is
       with Unchecked_Union;
 
   type ByteArr is array (Positive range <>) of UInt8;
+
+  package UInt8_IO is new Ada.Text_IO.Modular_IO (UInt8);
+  package UInt16_IO is new Ada.Text_IO.Modular_IO (UInt16);
 
 end Gbada.Types;
