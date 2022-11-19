@@ -12,7 +12,6 @@ package body Gbada.CPU.Instructions is
     Reg.F.Zero_Flag := (if Reg.A.Val = 16#00# then 2#1# else 2#0#);
   end CheckZero;
 
-
   ----------
   -- Load --
   ----------
@@ -313,6 +312,11 @@ package body Gbada.CPU.Instructions is
     null;
   end NOP_Instr;
 
+  procedure DI_Instr is
+  begin
+    Interrupts := False;
+  end DI_Instr;
+
   -----------
   -- Jumps --
   -----------
@@ -320,7 +324,7 @@ package body Gbada.CPU.Instructions is
   -- Jump to combined address
   procedure JP_Instr (Addr : Address) is
   begin
-    Reg.PC := Addr;
+    Reg.PC := Addr - 1;
   end JP_Instr;
 
   -- Conditional jump to address
@@ -334,7 +338,7 @@ package body Gbada.CPU.Instructions is
       when NC => Jump := (Reg.F.Carry_Flag = 2#0#);
       when C => Jump := (Reg.F.Carry_Flag = 2#1#);
     end case;
-    Reg.PC := (if Jump then Addr else Reg.PC);
+    Reg.PC := (if Jump then Addr - 1 else Reg.PC);
   end JP_Instr;
 
 
@@ -614,6 +618,7 @@ package body Gbada.CPU.Instructions is
       when 16#F0# => LDH_Instr (Operand8, Out_FF00);
       when 16#F1# => POP_Instr (Reg.AF);
       when 16#F2# => LD_Instr (Out_C);
+      when 16#F3# => DI_Instr;
       when 16#F5# => PUSH_Instr (Reg.AF);
       --TODO when 16#F6# => Reg.PC := Reg.PC + 1; OR_Instr (ReadByte (Reg.PC));
       when 16#F8# => LDHL_Instr (Operand8);
@@ -625,6 +630,7 @@ package body Gbada.CPU.Instructions is
                       with "Instruction not implemented!";
     end case;
     Reg.PC := Reg.PC + Instr_Info (ReadByte (Reg.PC)).Operands;
+    Instr_Delay := M_Cycle * Integer (Instr_Info (ByteCode).M_Cycles);
   end Read_Instruction;
 
 

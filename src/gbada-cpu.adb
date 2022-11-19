@@ -1,8 +1,20 @@
 with Ada.Text_IO; use Ada.Text_IO;
-with Gbada.Memory;
 with Gbada.CPU.Instructions; use Gbada.CPU.Instructions;
 
 package body Gbada.CPU is
+
+  procedure Start_Clock is
+  begin
+    Print_Registers (True);
+    loop
+      Instr_Start := Clock;
+
+      Read_Instruction;
+      Print_Registers (False);
+
+      delay until Instr_Start + Instr_Delay;
+    end loop;
+  end Start_Clock;
 
   procedure Print_Register (R : Register_Name) is
   begin

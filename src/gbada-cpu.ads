@@ -1,3 +1,4 @@
+with Ada.Real_Time; use Ada.Real_Time;
 with Gbada.Types; use Gbada.Types;
 with Gbada.Memory; use Gbada.Memory;
 
@@ -95,8 +96,17 @@ package Gbada.CPU is
   );
 
   type Register_Name is (A, B, C, D, E, F, H, L, AF, BC, DE, HL, SP, PC);
+
+  procedure Start_Clock;
   procedure Print_Register (R : Register_Name); 
-  
   procedure Print_Registers (Header : Boolean);
+
+  private
+
+    Instr_Start : Time;
+    Instr_Delay : Time_Span;
+    M_Cycle : constant Time_Span := Nanoseconds (4 * 238);
+
+    Interrupts : Boolean := True;
 
 end Gbada.CPU;

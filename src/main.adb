@@ -10,10 +10,6 @@ begin
   ReadRom ("games/tetris.gb");
   Put_Line ("");
 
-  Print_Registers (True);
-  loop
-    Read_Instruction;
-    Print_Registers (False);
-  end loop;
+  Start_Clock;
 
 end Main;
