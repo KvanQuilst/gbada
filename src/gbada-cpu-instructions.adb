@@ -343,7 +343,7 @@ package body Gbada.CPU.Instructions is
     Sub : Boolean := (Operand and 2#10000000#) /= 0;
     Val : UInt16_Split := (False, (Operand and 2#01111111#), 16#00#);
   begin
-    if Sub then Reg.PC := Reg.PC - (128 - Val.Val + 1);
+    if Sub then Reg.PC := Reg.PC - (128 - Val.Val);
            else Reg.PC := Reg.PC + Val.Val;
     end if;
   end JR_Instr;
@@ -360,7 +360,7 @@ package body Gbada.CPU.Instructions is
       when NC => Jump := (Reg.F.Carry_Flag = 2#0#);
       when C => Jump := (Reg.F.Carry_Flag = 2#1#);
     end case;
-    if Sub then Reg.PC := (if Jump then Reg.PC - (128 - Val.Val + 1) else Reg.PC);
+    if Sub then Reg.PC := (if Jump then Reg.PC - (128 - Val.Val) else Reg.PC);
            else Reg.PC := (if Jump then Reg.PC + Val.Val else Reg.PC);
     end if;
   end JR_Instr;
@@ -624,16 +624,7 @@ package body Gbada.CPU.Instructions is
       when others => raise Invalid_Instruction_Call_Exception
                       with "Instruction not implemented!";
     end case;
-
-    case ByteCode is
-      when 16#18# | 16#20# | 16#28# | 16#30# | 16#38# | 
-           16#C0# | 16#C2#..16#C4# | 16#C7#..16#CA# | 16#CC# |
-           16#CD# | 16#CF# | 16#D0# | 16#D2# | 16#D4# | 
-           16#D7#..16#DA# | 16#DC# | 16#DF# | 16#E7# | 16#E9# | 
-           16#EF# | 16#F7# | 16#FF#
-        => Reg.PC := Reg.PC + 1;
-      when others => Reg.PC := Reg.PC + Instr_Info (ByteCode).Operands;
-    end case;
+    Reg.PC := Reg.PC + Instr_Info (ReadByte (Reg.PC)).Operands;
   end Read_Instruction;
 
 
