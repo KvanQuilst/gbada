@@ -107,6 +107,6 @@ package Gbada.CPU is
     Instr_Delay : Time_Span;
     M_Cycle : constant Time_Span := Nanoseconds (4 * 238);
 
-    Interrupts : Boolean := True;
+    IME : Boolean := True;
 
 end Gbada.CPU;

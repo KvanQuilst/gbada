@@ -1,5 +1,6 @@
 with Ada.Text_IO; use Ada.Text_IO;
 with Gbada.CPU.Instructions; use Gbada.CPU.Instructions;
+with Gbada.CPU.Interrupts; use Gbada.CPU.Interrupts;
 
 package body Gbada.CPU is
 
@@ -13,6 +14,7 @@ package body Gbada.CPU is
       Print_Registers (False);
 
       delay until Instr_Start + Instr_Delay;
+      Handle_Interrupts;
     end loop;
   end Start_Clock;
 

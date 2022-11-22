@@ -8,7 +8,7 @@ package Gbada.Memory is
 
   type MemoryLocation is (
       RST0, RST8, RST10, RST18, RST20, RST28, RST30, RST38,
-      INT_VBlank, INT_Stat, INT_Timer, INT_Serial, INT_JoyPad
+      Interrupt_EN
     );
 
   for MemoryLocation use (
@@ -20,12 +20,15 @@ package Gbada.Memory is
       RST28 => 16#0028#,
       RST30 => 16#0030#,
       RST38 => 16#0038#,
-      INT_VBlank  => 16#0040#, 
-      INT_Stat    => 16#0048#,
-      INT_Timer   => 16#0050#,
-      INT_Serial  => 16#0058#,
-      INT_JoyPad  => 16#0060#
+      Interrupt_EN => 16#FFFF#
     );
+
+  Interrupt_VBLank   : constant Address := 16#0040#;
+  Interrupt_LCD_STAT : constant Address := 16#0048#;
+  Interrupt_Timer    : constant Address := 16#0050#;
+  Interrupt_Serial   : constant Address := 16#0058#;
+  Interrupt_Joypad   : constant Address := 16#0060#;
+  Interrupt_Flag     : constant Address := 16#FF0F#;
 
   -- Subprograms --
 

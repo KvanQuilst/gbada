@@ -314,7 +314,7 @@ package body Gbada.CPU.Instructions is
 
   procedure DI_Instr is
   begin
-    Interrupts := False;
+    IME := False;
   end DI_Instr;
 
   -----------
