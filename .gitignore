@@ -1,2 +1,6 @@
 main
 obj/
+/obj/
+/bin/
+/alire/
+/config/
