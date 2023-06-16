@@ -9,6 +9,7 @@ package Memory is
    procedure Write_Byte (Item : UInt8; Addr : Address);
    function  Read_Byte  (Addr : Address) return UInt8;
 
+   procedure Write_Double (Item : UInt16; Addr : Address);
    function Read_Double (Addr : Address) return UInt16;
 
 private

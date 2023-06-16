@@ -14,20 +14,52 @@ package body CPU.Logic is
       null;
    end NOP;
 
+   procedure STOP is
+   begin
+      Halted := True;
+   end STOP;
+
+   procedure SCF is
+   begin
+      Registers.F.Subtraction := 0;
+      Registers.F.Half_Carry  := 0;
+      Registers.F.Carry       := 1;
+   end SCF;
+
+   procedure CCF is
+   begin
+      Registers.F.Subtraction := 0;
+      Registers.F.Half_Carry  := 0;
+      Registers.F.Carry       := not Registers.F.Carry;
+   end CCF;
+
+   procedure HALT is
+   begin
+      Halted := True;
+   end HALT;
+
    --
    --  LD
    --
    --  R_R: 8-bit Register, 8-bit Register
-   --  R_I: 8-bit Register, Immediate
+   --  R_I: 8-bit Register, 8-bit Immediate
+   --  RR_II: 16-bit Register, 16-bit Immediate
    --
-   type LD_Op_Type is (R_R, R_I);
+   type LD_Op_Type is (R_R, R_I, RR_II, RRA_A, A_RRA, II_A, A_II,
+                       II_SP, R_HLA, HLA_R);
    type LD_Operands (O_Type : LD_Op_Type) is record
       case O_Type is
          when R_R =>
-            Op1 : Register_8;
-            Op2 : Register_8;
-         when R_I =>
-            Op : Register_8;
+            R1 : Register_8;
+            R2 : Register_8;
+         when R_I | R_HLA | HLA_R =>
+            R : Register_8;
+         when RR_II =>
+            RR : Register_16;
+         when RRA_A | A_RRA =>
+            RRA : Register_16;
+         when II_A | A_II | II_SP =>
+            null;
       end case;
    end record;
 
@@ -35,51 +67,77 @@ package body CPU.Logic is
    begin
       case Ops.O_Type is
          when R_R =>
-            Write_Register (Ops.Op1, Read_Register (Ops.Op2));
+            Write_Register (Ops.R1, Read_Register (Ops.R2));
          when R_I =>
-            Write_Register (Ops.Op, Read_Byte (Registers.PC + 1));
+            Write_Register (Ops.R, Read_Byte (Registers.PC + 1));
+         when RR_II =>
+            Write_Register (Ops.RR, Read_Double (Registers.PC + 1));
+         when RRA_A =>
+            Write_Byte (Registers.A.Val, Read_Register (Ops.RRA));
+         when A_RRA =>
+            Write_Register (A, Read_Byte (Read_Register (Ops.RRA)));
+         when II_A =>
+            Write_Byte (Registers.A.Val, Read_Double (Registers.PC + 1));
+         when A_II =>
+            Write_Register (A, Read_Byte (Read_Double (Registers.PC + 1)));
+         when II_SP =>
+            Write_Double (Registers.SP, Read_Double (Registers.PC + 1));
+         when R_HLA =>
+            Write_Register (Ops.R, Read_Byte (Registers.HL.Val));
+         when HLA_R =>
+            Write_Byte (Read_Register (Ops.R), Registers.HL.Val);
       end case;
    end LD;
 
-   --
-   --  16-bit Arithmetic Operation Operands
-   --
-   --  RR: 16-bit Register
-   --
-   type Arith16_Op_Type is (RR);
-   type Arith16_Operands (O_Type : Arith16_Op_Type) is record
-      case O_Type is
-         when RR =>
-            Op : Register_16;
-      end case;
-   end record;
-
-   procedure INC16 (Ops : Arith16_Operands) is
+   type LDID_Op_Type is (HLA_A, A_HLA);
+   procedure LDI (Op : LDID_Op_Type) is
    begin
-      case Ops.O_Type is
-         when RR =>
-            Write_Register (Ops.Op, Read_Register (Ops.Op) + 1);
+      case Op is
+         when HLA_A =>
+            Write_Byte (Registers.A.Val, Registers.HL.Val);
+         when A_HLA =>
+            Write_Register (A, Read_Byte (Registers.HL.Val));
       end case;
-   end INC16;
+      Registers.HL.Val := Registers.HL.Val + 1;
+   end LDI;
 
-   procedure DEC16 (Ops : Arith16_Operands) is
+   procedure LDD (Op : LDID_Op_Type) is
    begin
-      case Ops.O_Type is
-         when RR =>
-            Write_Register (Ops.Op, Read_Register (Ops.Op) - 1);
+      case Op is
+         when HLA_A =>
+            Write_Byte (Registers.A.Val, Registers.HL.Val);
+         when A_HLA =>
+            Write_Register (A, Read_Byte (Registers.HL.Val));
       end case;
-   end DEC16;
+      Registers.HL.Val := Registers.HL.Val - 1;
+   end LDD;
+
+   procedure PUSH (RR : Register_16) is
+   begin
+      Write_Double (Read_Register (RR), Registers.SP - 1);
+      Registers.SP := Registers.SP - 2;
+   end PUSH;
+
+   procedure POP (RR : Register_16) is
+   begin
+      Write_Register (RR, Read_Double (Registers.SP + 1));
+      Registers.SP := Registers.SP + 2;
+   end POP;
 
    --
-   --  8-bit Arithmetic Operation Operands
+   --  Arithmetic Operation Operands
    --
    --  R: 8-bit Register
+   --  RR: 16-bit Register
+   --  II: 16-bit Immediate
    --
-   type Arith_Op_Type is (R);
+   type Arith_Op_Type is (R, RR);
    type Arith_Operands (O_Type : Arith_Op_Type) is record
       case O_Type is
          when R =>
-            Op : Register_8;
+            R : Register_8;
+         when RR =>
+            RR : Register_16;
       end case;
    end record;
 
@@ -88,7 +146,9 @@ package body CPU.Logic is
    begin
       case Ops.O_Type is
          when R =>
-            Write_Register (Ops.Op, Read_Register (Ops.Op) + 1);
+            Write_Register (Ops.R, Read_Register (Ops.R) + 1);
+         when RR =>
+            Write_Register (Ops.RR, Read_Register (Ops.RR) + 1);
       end case;
    end INC;
 
@@ -97,7 +157,9 @@ package body CPU.Logic is
    begin
       case Ops.O_Type is
          when R =>
-            Write_Register (Ops.Op, Read_Register (Ops.Op) - 1);
+            Write_Register (Ops.R, Read_Register (Ops.R) - 1);
+         when RR =>
+            Write_Register (Ops.RR, Read_Register (Ops.RR) - 1);
       end case;
    end DEC;
 
@@ -106,7 +168,9 @@ package body CPU.Logic is
    begin
       case Ops.O_Type is
          when R =>
-            Write_Register (A, Registers.A.Val + Read_Register (Ops.Op));
+            Write_Register (A, Registers.A.Val + Read_Register (Ops.R));
+         when RR =>
+            Write_Register (HL, Registers.HL.Val + Read_Register (Ops.RR));
       end case;
    end ADD;
 
@@ -115,7 +179,9 @@ package body CPU.Logic is
    begin
       case Ops.O_Type is
          when R =>
-            Write_Register (A, Registers.A.Val - Read_Register (Ops.Op));
+            Write_Register (A, Registers.A.Val - Read_Register (Ops.R));
+         when others =>
+            raise Invalid_Instruction_Call_Exception;
       end case;
    end SUB;
 
@@ -123,7 +189,9 @@ package body CPU.Logic is
    begin
       case Ops.O_Type is
          when R =>
-            Write_Register (A, Registers.A.Val and Read_Register (Ops.Op));
+            Write_Register (A, Registers.A.Val and Read_Register (Ops.R));
+         when others =>
+            raise Invalid_Instruction_Call_Exception;
       end case;
       Registers.F.Zero := (if Registers.A.Val = 0 then 1 else 0);
       Registers.F.Subtraction := 0;
@@ -135,7 +203,9 @@ package body CPU.Logic is
    begin
       case Ops.O_Type is
          when R =>
-            Write_Register (A, Registers.A.Val xor Read_Register (Ops.Op));
+            Write_Register (A, Registers.A.Val xor Read_Register (Ops.R));
+         when others =>
+            raise Invalid_Instruction_Call_Exception;
       end case;
       Registers.F.Zero := (if Registers.A.Val = 0 then 1 else 0);
       Registers.F.Subtraction := 0;
@@ -147,7 +217,9 @@ package body CPU.Logic is
    begin
       case Ops.O_Type is
          when R =>
-            Write_Register (A, Registers.A.Val xor Read_Register (Ops.Op));
+            Write_Register (A, Registers.A.Val xor Read_Register (Ops.R));
+         when others =>
+            raise Invalid_Instruction_Call_Exception;
       end case;
       Registers.F.Zero := (if Registers.A.Val = 0 then 1 else 0);
       Registers.F.Subtraction := 0;
@@ -293,51 +365,70 @@ package body CPU.Logic is
 
       case OpCode is
          when 16#00# => NOP;
-
-         when 16#03# => INC16 ((RR, BC));
+         when 16#01# => LD ((RR_II, BC));
+         when 16#02# => LD ((RRA_A, BC));
+         when 16#03# => INC ((RR, BC));
          when 16#04# => INC ((R, B));
          when 16#05# => DEC ((R, B));
          when 16#06# => LD ((R_I, B));
 
-         when 16#0B# => DEC16 ((RR, BC));
+         when 16#08# => LD ((O_Type => II_SP));
+         when 16#09# => ADD ((RR, BC));
+         when 16#0A# => LD ((A_RRA, BC));
+         when 16#0B# => DEC ((RR, BC));
          when 16#0C# => INC ((R, C));
          when 16#0D# => DEC ((R, C));
          when 16#0E# => LD ((R_I, C));
 
-         when 16#13# => INC16 ((RR, DE));
+         when 16#10# => STOP;
+         when 16#11# => LD ((RR_II, DE));
+         when 16#12# => LD ((RRA_A, DE));
+         when 16#13# => INC ((RR, DE));
          when 16#14# => INC ((R, D));
          when 16#15# => DEC ((R, D));
          when 16#16# => LD ((R_I, D));
 
-         when 16#1B# => DEC16 ((RR, DE));
+         when 16#19# => ADD ((RR, DE));
+         when 16#1A# => LD ((A_RRA, DE));
+         when 16#1B# => DEC ((RR, DE));
          when 16#1C# => INC ((R, E));
          when 16#1D# => DEC ((R, E));
          when 16#1E# => LD ((R_I, E));
 
-         when 16#23# => INC16 ((RR, HL));
+         when 16#21# => LD ((RR_II, HL));
+         when 16#22# => LDI (HLA_A);
+         when 16#23# => INC ((RR, HL));
          when 16#24# => INC ((R, H));
          when 16#25# => DEC ((R, H));
          when 16#26# => LD ((R_I, H));
 
-         when 16#2B# => DEC16 ((RR, HL));
+         when 16#29# => ADD ((RR, HL));
+         when 16#2A# => LDI (A_HLA);
+         when 16#2B# => DEC ((RR, HL));
          when 16#2C# => INC ((R, L));
          when 16#2D# => DEC ((R, L));
          when 16#2E# => LD ((R_I, L));
 
-         when 16#33# => INC16 ((RR, SP));
+         when 16#31# => LD ((RR_II, SP));
+         when 16#32# => LDD (HLA_A);
+         when 16#33# => INC ((RR, SP));
 
-         when 16#3B# => DEC16 ((RR, SP));
+         when 16#37# => SCF;
+
+         when 16#39# => ADD ((RR, SP));
+         when 16#3A# => LDD (A_HLA);
+         when 16#3B# => DEC ((RR, SP));
          when 16#3C# => INC ((R, A));
          when 16#3D# => DEC ((R, A));
          when 16#3E# => LD ((R_I, A));
-
+         when 16#3F# => CCF;
          when 16#40# => LD ((R_R, B, B));
          when 16#41# => LD ((R_R, B, C));
          when 16#42# => LD ((R_R, B, D));
          when 16#43# => LD ((R_R, B, E));
          when 16#44# => LD ((R_R, B, H));
          when 16#45# => LD ((R_R, B, L));
-         --  when 16#46# =>
+         when 16#46# => LD ((R_HLA, B));
          when 16#47# => LD ((R_R, B, A));
          when 16#48# => LD ((R_R, C, B));
          when 16#49# => LD ((R_R, C, C));
@@ -345,7 +436,7 @@ package body CPU.Logic is
          when 16#4B# => LD ((R_R, C, E));
          when 16#4C# => LD ((R_R, C, H));
          when 16#4D# => LD ((R_R, C, L));
-         --  when 16#4E# =>
+         when 16#4E# => LD ((R_HLA, C));
          when 16#4F# => LD ((R_R, C, A));
          when 16#50# => LD ((R_R, D, B));
          when 16#51# => LD ((R_R, D, C));
@@ -353,7 +444,7 @@ package body CPU.Logic is
          when 16#53# => LD ((R_R, D, E));
          when 16#54# => LD ((R_R, D, H));
          when 16#55# => LD ((R_R, D, L));
-         --  when 16#56# =>
+         when 16#56# => LD ((R_HLA, D));
          when 16#57# => LD ((R_R, D, A));
          when 16#58# => LD ((R_R, E, B));
          when 16#59# => LD ((R_R, E, C));
@@ -361,7 +452,7 @@ package body CPU.Logic is
          when 16#5B# => LD ((R_R, E, E));
          when 16#5C# => LD ((R_R, E, H));
          when 16#5D# => LD ((R_R, E, L));
-         --  when 16#5E# =>
+         when 16#5E# => LD ((R_HLA, E));
          when 16#5F# => LD ((R_R, E, A));
          when 16#60# => LD ((R_R, H, B));
          when 16#61# => LD ((R_R, H, C));
@@ -369,7 +460,7 @@ package body CPU.Logic is
          when 16#63# => LD ((R_R, H, E));
          when 16#64# => LD ((R_R, H, H));
          when 16#65# => LD ((R_R, H, L));
-         --  when 16#66# =>
+         when 16#66# => LD ((R_HLA, H));
          when 16#67# => LD ((R_R, H, A));
          when 16#68# => LD ((R_R, L, B));
          when 16#69# => LD ((R_R, L, C));
@@ -377,8 +468,24 @@ package body CPU.Logic is
          when 16#6B# => LD ((R_R, L, E));
          when 16#6C# => LD ((R_R, L, H));
          when 16#6D# => LD ((R_R, L, L));
-         --  when 16#6E# =>
+         when 16#6E# => LD ((R_HLA, L));
          when 16#6F# => LD ((R_R, L, A));
+         when 16#70# => LD ((HLA_R, B));
+         when 16#71# => LD ((HLA_R, C));
+         when 16#72# => LD ((HLA_R, D));
+         when 16#73# => LD ((HLA_R, E));
+         when 16#74# => LD ((HLA_R, H));
+         when 16#75# => LD ((HLA_R, L));
+         when 16#76# => HALT;
+         when 16#77# => LD ((HLA_R, A));
+         when 16#78# => LD ((R_R, A, B));
+         when 16#79# => LD ((R_R, A, C));
+         when 16#7A# => LD ((R_R, A, D));
+         when 16#7B# => LD ((R_R, A, E));
+         when 16#7C# => LD ((R_R, A, H));
+         when 16#7D# => LD ((R_R, A, L));
+         when 16#7E# => LD ((R_HLA, A));
+         when 16#7F# => LD ((R_R, A, A));
          when 16#80# => ADD ((R, B));
          when 16#81# => ADD ((R, C));
          when 16#82# => ADD ((R, D));
@@ -422,14 +529,32 @@ package body CPU.Logic is
          --  when 16#B6# =>
          when 16#B7# => A_OR ((R, A));
 
+         when 16#C1# => POP (BC);
          when 16#C2# => JP ((C_II, NZ));
          when 16#C3# => JP ((O_Type => II));
 
+         when 16#C5# => PUSH (BC);
+
          when 16#CA# => JP ((C_II, Z));
 
+         when 16#D1# => POP (DE);
          when 16#D2# => JP ((C_II, NC));
 
+         when 16#D5# => PUSH (DE);
+
          when 16#DA# => JP ((C_II, C));
+
+         when 16#E1# => POP (HL);
+
+         when 16#E5# => PUSH (HL);
+
+         when 16#EA# => LD ((O_Type => II_A));
+
+         when 16#F1# => POP (AF);
+
+         when 16#F5# => POP (AF);
+
+         when 16#FA# => LD ((O_Type => A_II));
          when others => Invalid_Instruction;
       end case;
 

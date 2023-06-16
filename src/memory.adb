@@ -28,6 +28,13 @@ package body Memory is
       return Mem_Map (Addr);
    end Read_Byte;
 
+   procedure Write_Double (Item : UInt16; Addr : Address) is
+      Double : constant UInt16_Split := (False, Item);
+   begin
+      Mem_Map (Addr + 1) := Double.Upper;
+      Mem_Map (Addr) := Double.Lower;
+   end Write_Double;
+
    function Read_Double (Addr : Address) return UInt16 is
       Double : constant UInt16_Split :=
          (True, Mem_Map (Addr + 1), Mem_Map (Addr));

@@ -22,7 +22,7 @@ private
    Instr_Delay : Time_Span;
    M_Cycle : constant Time_Span := Nanoseconds (4 * 238);
 
-   IME : Boolean := True;
+   Halted : Boolean := False;
 
    ---------------
    -- Registers --
