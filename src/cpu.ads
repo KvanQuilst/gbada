@@ -22,7 +22,8 @@ private
    Instr_Delay : Time_Span;
    M_Cycle : constant Time_Span := Nanoseconds (4 * 238);
 
-   Halted : Boolean := False;
+   Interrupt_Enable : Boolean := True;
+   Halted           : Boolean := False;
 
    ---------------
    -- Registers --
