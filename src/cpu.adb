@@ -77,7 +77,7 @@ package body CPU is
          when F =>
             Put ("Flags: ");
             Put ((if Registers.F.Zero = 1        then "Z" else "-") &
-                 (if Registers.F.Subtraction = 1 then "S" else "-") &
+                 (if Registers.F.Subtraction = 1 then "N" else "-") &
                  (if Registers.F.Half_Carry = 1  then "H" else "-") &
                  (if Registers.F.Carry = 1       then "C" else "-"));
          when B => Put ("Register B: "); Put (Registers.B.Val);
@@ -121,7 +121,7 @@ package body CPU is
       Put (Registers.DE.Val); Put (" | ");
       Put (Registers.HL.Val); Put (" | ");
       Put ((if Registers.F.Zero = 1        then "Z" else "-") &
-           (if Registers.F.Subtraction = 1 then "S" else "-") &
+           (if Registers.F.Subtraction = 1 then "N" else "-") &
            (if Registers.F.Half_Carry = 1  then "H" else "-") &
            (if Registers.F.Carry = 1       then "C" else "-"));
       New_Line;
