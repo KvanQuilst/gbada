@@ -30,6 +30,11 @@ with Types; use Types;
 
 package Memory is
 
+   -- Notable Addresses --
+   A_Tiles_0 : constant Address := 16#8000#;
+   A_Tiles_1 : constant Address := 16#8800#;
+   A_Tiles_2 : constant Address := 16#9000#;
+
    procedure Read_Cart (File_Name : String);
 
    procedure Write_Byte (Item : UInt8; Addr : Address);

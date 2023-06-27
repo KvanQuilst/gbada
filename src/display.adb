@@ -28,6 +28,7 @@ with SDL.Video.Renderers.Makers;
 package body Display is
 
    function Setup_Display return Boolean is
+      use SDL.C;
    begin
       if not SDL.Initialise (Flags => SDL.Enable_Screen) then
          return False;
