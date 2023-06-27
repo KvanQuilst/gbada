@@ -11,7 +11,7 @@ begin
 
    CPU.Execute;
 
-   loop
-      null;
-   end loop;
+   delay 10.0;
+
+   Display.Finalize_Display;
 end Gbada;
