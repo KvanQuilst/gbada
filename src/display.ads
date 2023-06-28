@@ -26,9 +26,10 @@
 --  GBADA memory.
 
 with SDL;
-with SDL.Video.Windows;
-with SDL.Video.Renderers;
 with SDL.Video.Palettes;
+with SDL.Video.Renderers;
+with SDL.Video.Textures;
+with SDL.Video.Windows;
 
 package Display is
 
@@ -42,8 +43,9 @@ package Display is
 
 private
 
-   Window : SDL.Video.Windows.Window;
+   Window   : SDL.Video.Windows.Window;
    Renderer : SDL.Video.Renderers.Renderer;
+   Texture  : SDL.Video.Textures.Texture;
 
    Colors : constant array (0 .. 3) of SDL.Video.Palettes.Colour :=
       ((16#0F#, 16#38#, 16#0F#, 16#FF#), --  Darkest Green
