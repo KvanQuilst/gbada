@@ -30,10 +30,10 @@ package body CPU is
 
    procedure Execute is
    begin
-      CPU.Print_Registers (True);
+      --  CPU.Print_Registers (True);
       for I in 1 .. 100 loop
          Execute_Instruction;
-         CPU.Print_Registers (False);
+         --  CPU.Print_Registers (False);
       end loop;
    end Execute;
 

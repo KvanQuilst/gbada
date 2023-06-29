@@ -2,9 +2,13 @@
 --                                                                           --
 --                                   GBADA                                   --
 --                                                                           --
+--                              Display (Spec)                               --
+--                                                                           --
 --                      Copyright (C) 2023 Dylan Eskew                       --
 --                                                                           --
--- GBADA is free software: you can  redistribute it  and/or modify it  under --
+-- This file is a part of GBADA.                                             --
+--                                                                           --
+-- GBADA is free software: you can redistribute it and/or modify it under    --
 -- the terms of the GNU General Public License as published by the Free      --
 -- Software Foundation, either version 3 of the License, or (at your option) --
 -- any later version.                                                        --
@@ -18,23 +22,21 @@
 -- with GBADA. If not, see <https://www.gnu.org/licenses/>.                  --
 -------------------------------------------------------------------------------
 
---  Main execution file for GBADA. Central location for program logic
+--  Display module for GBADA utilizing the ncurses library for a terminal-based
+--  screen
 
-with CPU;
-with Display;
-with Memory;
+with Terminal_Interface.Curses; use Terminal_Interface.Curses;
 
-procedure Gbada is
-begin
-   if not Display.Init_Display then
-      return;
-   end if;
+package Display is
 
-   Memory.Read_Cart ("games/tetris.gb");
+   function Init_Display return Boolean;
+   procedure End_Display;
 
-   CPU.Execute;
+private
 
-   delay 10.0;
+   Scr_Height : constant Line_Position   := 144;
+   Scr_Width  : constant Column_Position := 2 * 160;
+   Scr_Y_0    : Line_Position;
+   Scr_X_0    : Column_Position;
 
-   Display.End_Display;
-end Gbada;
+end Display;
