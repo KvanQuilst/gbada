@@ -19,7 +19,7 @@
 -- details.                                                                  --
 --                                                                           --
 -- You should have received a copy of the GNU General Public License along   --
--- GBADA. If not, see <https://www.gnu.org/licenses/>.                       --
+-- with GBADA. If not, see <https://www.gnu.org/licenses/>.                  --
 -------------------------------------------------------------------------------
 
 --  CPU package which handles all of the instruction logic and execution.

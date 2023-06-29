@@ -15,7 +15,7 @@
 -- details.                                                                  --
 --                                                                           --
 -- You should have received a copy of the GNU General Public License along   --
--- GBADA. If not, see <https://www.gnu.org/licenses/>.                       --
+-- with GBADA. If not, see <https://www.gnu.org/licenses/>.                  --
 -------------------------------------------------------------------------------
 
 --  Main execution file for GBADA. Central location for program logic

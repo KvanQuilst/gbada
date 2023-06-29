@@ -19,7 +19,7 @@
 -- details.                                                                  --
 --                                                                           --
 -- You should have received a copy of the GNU General Public License along   --
--- GBADA. If not, see <https://www.gnu.org/licenses/>.                       --
+-- with GBADA. If not, see <https://www.gnu.org/licenses/>.                  --
 -------------------------------------------------------------------------------
 
 --  CPU module for GBADA. Handles the emulation of the hardware and its state.
