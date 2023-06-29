@@ -19,7 +19,7 @@
 -- details.                                                                  --
 --                                                                           --
 -- You should have received a copy of the GNU General Public License along   --
--- GBADA. If not, see <https://www.gnu.org/licenses/>.                       --
+-- with GBADA. If not, see <https://www.gnu.org/licenses/>.                  --
 -------------------------------------------------------------------------------
 
 --  Basic generic types for use throughout GBADA
@@ -28,10 +28,11 @@ with Ada.Text_IO;
 
 package Types is
 
-   type Bit    is mod 2**1;
-   type UInt4  is mod 2**4;
-   type UInt8  is mod 2**8;
-   type UInt16 is mod 2**16;
+   type Bit    is mod 2 ** 1;
+   type UInt2  is mod 2 ** 2;
+   type UInt4  is mod 2 ** 4;
+   type UInt8  is mod 2 ** 8;
+   type UInt16 is mod 2 ** 16;
 
    type UInt16_Split (Split : Boolean := True) is record
      case Split is

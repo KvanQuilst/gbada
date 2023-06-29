@@ -34,6 +34,8 @@ package Memory is
    A_Tiles_0 : constant Address := 16#8000#;
    A_Tiles_1 : constant Address := 16#8800#;
    A_Tiles_2 : constant Address := 16#9000#;
+   A_TileMap_0 : constant Address := 16#9800#;
+   A_TileMap_1 : constant Address := 16#9C00#;
 
    procedure Read_Cart (File_Name : String);
 
@@ -41,7 +43,7 @@ package Memory is
    function  Read_Byte  (Addr : Address) return UInt8;
 
    procedure Write_Double (Item : UInt16; Addr : Address);
-   function Read_Double (Addr : Address) return UInt16;
+   function  Read_Double (Addr : Address) return UInt16;
 
 private
 

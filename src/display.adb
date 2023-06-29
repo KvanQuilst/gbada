@@ -27,6 +27,8 @@ with SDL.Video.Renderers.Makers;
 with SDL.Video.Textures.Makers;
 with SDL.Video.Windows.Makers;
 
+--  with Display.Read;
+
 package body Display is
 
    function Setup_Display return Boolean is

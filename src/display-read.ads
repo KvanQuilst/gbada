@@ -19,14 +19,20 @@
 -- details.                                                                  --
 --                                                                           --
 -- You should have received a copy of the GNU General Public License along   --
--- GBADA. If not, see <https://www.gnu.org/licenses/>.                       --
+-- with GBADA. If not, see <https://www.gnu.org/licenses/>.                  --
 -------------------------------------------------------------------------------
 
---  Reads the tile and sprite data from memory and converts it to a SDL 
+--  Reads the tile and sprite data from memory and converts it to a SDL
 --  rendering format
 
 package Display.Read is
 
-   function Get_Tile (Addr : Address) return Boolean;
+   --  Gameboy Tile: 8x8 pixels, converted to SDL RGBA pixel format
+   subtype Tile_Width is Integer range 0 .. 7;
+   type Tile is array (Tile_Width, Tile_Width) of SDL.Video.Palettes.Colour;
+
+   --  Get Gameboy Tile data from memory location and convert it to SDL RGBA
+   --  pixel format
+   function Get_Tile (Addr : Address) return Tile;
 
 end Display.Read;

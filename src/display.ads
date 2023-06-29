@@ -31,6 +31,8 @@ with SDL.Video.Renderers;
 with SDL.Video.Textures;
 with SDL.Video.Windows;
 
+with Types; use Types;
+
 package Display is
 
    --  Setup SDL2 for rendering
@@ -47,7 +49,7 @@ private
    Renderer : SDL.Video.Renderers.Renderer;
    Texture  : SDL.Video.Textures.Texture;
 
-   Colors : constant array (0 .. 3) of SDL.Video.Palettes.Colour :=
+   Colors : constant array (UInt2) of SDL.Video.Palettes.Colour :=
       ((16#0F#, 16#38#, 16#0F#, 16#FF#), --  Darkest Green
        (16#30#, 16#62#, 16#30#, 16#FF#), --  Dark Green
        (16#8B#, 16#AC#, 16#0F#, 16#FF#), --  Light Green
