@@ -26,11 +26,11 @@ with Memory;
 
 procedure Gbada is
 begin
+   Memory.Read_Cart ("games/tetris.gb");
+
    if not Display.Init_Display then
       return;
    end if;
-
-   Memory.Read_Cart ("games/tetris.gb");
 
    CPU.Execute;
 

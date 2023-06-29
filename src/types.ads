@@ -29,6 +29,7 @@ with Ada.Text_IO;
 package Types is
 
    type Bit    is mod 2**1;
+   type UInt2  is mod 2**2;
    type UInt4  is mod 2**4;
    type UInt8  is mod 2**8;
    type UInt16 is mod 2**16;

@@ -31,12 +31,17 @@ package Display is
 
    function Init_Display return Boolean;
    procedure End_Display;
+   procedure Render;
 
 private
 
-   Scr_Height : constant Line_Position   := 144;
-   Scr_Width  : constant Column_Position := 2 * 160;
-   Scr_Y_0    : Line_Position;
-   Scr_X_0    : Column_Position;
+   Pixel_Width : constant Column_Position := 2;
+   Scr_Height  : constant Line_Position   := 144;
+   Scr_Width   : constant Column_Position := Pixel_Width * 160;
+   Scr_Y_0     : Line_Position;
+   Scr_X_0     : Column_Position;
+
+   type Tile is
+      array (Integer range 0 .. 7, Integer range 0 .. 7) of Color_Pair;
 
 end Display;

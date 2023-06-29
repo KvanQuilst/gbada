@@ -21,6 +21,7 @@
 -- You should have received a copy of the GNU General Public License along   --
 -- with GBADA. If not, see <https://www.gnu.org/licenses/>.                  --
 -------------------------------------------------------------------------------
+with Ada.Text_IO;
 package body Memory is
 
    procedure Read_Cart (File_Name : String) is
@@ -37,6 +38,8 @@ package body Memory is
          Write_Byte (Val, I);
          I := I + 1;
       end loop;
+
+      --  Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error, I'Image);
 
       Close (F);
    end Read_Cart;

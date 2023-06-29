@@ -23,6 +23,10 @@
 -------------------------------------------------------------------------------
 with Ada.Text_IO;
 
+with Hex_IO;
+with Memory;
+with Types; use Types;
+
 package body Display is
 
    function Init_Display return Boolean is
@@ -71,6 +75,7 @@ package body Display is
          end loop;
       end loop;
 
+      Render;
       Refresh;
 
       return True;
@@ -80,5 +85,59 @@ package body Display is
    begin
       End_Windows;
    end End_Display;
+
+   function Convert (Addr : Address) return Tile is
+      Data_1, Data_2 : UInt8;
+      A : Address := Addr;
+      T : Tile := (others => (others => 1));
+      Int1, Int2 : UInt4;
+      Val : Color_Pair;
+   begin
+      for I in 0 .. 7 loop
+         Data_1 := Memory.Read_Byte (A + UInt16 (I * 2));
+         Data_2 := Memory.Read_Byte (A + UInt16 (I * 2) + 1);
+         Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
+                               Hex_IO.Hex_Image (Data_1) & " " &
+                               Hex_IO.Hex_Image (Data_2));
+
+         for J in 0 .. 7 loop
+            Int1 := UInt4 (if (Data_1 and 2 ** (7 - J)) > 0 then 1 else 0);
+            Int2 :=
+               UInt4 ((if (Data_2 and 2 ** (7 - J)) > 0 then 1 else 0) * 2);
+            Val := Color_Pair (Int1 + Int2 + 1);
+            T (I, J) := Val;
+            Ada.Text_IO.Put_Line (Ada.Text_IO.Standard_Error,
+                                  "T (" & I'Image & "," & J'Image & ") =" &
+                                  Int1'Image & " +" & Int2'Image & " =" &
+                                  Val'Image);
+            --  T (I, J) := Color_Pair ((I + J) mod 4 + 1);
+         end loop;
+
+         A := A + 16;
+      end loop;
+
+      return T;
+   end Convert;
+
+   procedure Render is
+      Addr : Address := 16#0104#;
+      --  Addr : Address := Memory.A_Tiles_0;
+      T : Tile;
+   begin
+      for I in 0 .. 19 loop
+         for J in 0 .. 17 loop
+            T := Convert (Addr);
+            for K in 0 .. 7 loop
+               for L in 0 .. 7 loop
+                  Set_Color (Pair => T (K, L));
+                  Add (Str => "  ",
+                       Line => Scr_Y_0 + Line_Position (J * 8 + K),
+                       Column =>  Scr_X_0 + Column_Position (I * 16 + L * 2));
+               end loop;
+            end loop;
+            Addr := Addr + 16;
+         end loop;
+      end loop;
+   end Render;
 
 end Display;
