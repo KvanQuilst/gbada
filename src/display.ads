@@ -27,6 +27,8 @@
 
 with Terminal_Interface.Curses; use Terminal_Interface.Curses;
 
+with Types; use Types;
+
 package Display is
 
    function Init_Display return Boolean;
@@ -35,13 +37,44 @@ package Display is
 
 private
 
-   Pixel_Width : constant Column_Position := 2;
-   Scr_Height  : constant Line_Position   := 144;
-   Scr_Width   : constant Column_Position := Pixel_Width * 160;
+   ------------
+   -- Screen --
+   ------------
+
+   Scr_Height : constant Line_Position   := 144;
+   Scr_Width  : constant Column_Position := 160;
+
+   subtype Scr_Line_Position is Line_Position range 0 .. Scr_Height - 1;
+   subtype Scr_Column_Position is Column_Position range 0 .. Scr_Width - 1;
+
+   --  ncurses location for (0, 0) of the Gameboy screen
    Scr_Y_0     : Line_Position;
    Scr_X_0     : Column_Position;
 
-   type Tile is
-      array (Integer range 0 .. 7, Integer range 0 .. 7) of Color_Pair;
+   --  Screen (0, 0) location on the 256x256 tile map
+   Scr_Y_Pos : Line_Position   range 1 .. 256;
+   Scr_X_Pos : Column_Position range 1 .. 256;
+
+   Pixel : constant String := "  ";
+
+   -- LCDC Masks --
+   LCD_Enable       : constant UInt8 := 2#10000000#;
+   Window_Map       : constant UInt8 := 2#01000000#;
+   Window_Enable    : constant UInt8 := 2#00100000#;
+   BG_Window_Data   : constant UInt8 := 2#00010000#;
+   BG_Tile_Map      : constant UInt8 := 2#00001000#;
+   OBJ_Size         : constant UInt8 := 2#00000100#;
+   OBJ_Enable       : constant UInt8 := 2#00000010#;
+   BG_Window_Enable : constant UInt8 := 2#00000001#;
+
+   -----------
+   -- Tiles --
+   -----------
+
+   Tile_Size : constant UInt16 := 16;
+   Tile_Width : constant := 8;
+
+   subtype Tile_Pixel is Integer range 0 .. Tile_Width - 1;
+   type Tile is array (Tile_Pixel, Tile_Pixel) of Color_Pair;
 
 end Display;
