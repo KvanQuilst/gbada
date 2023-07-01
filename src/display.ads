@@ -51,9 +51,12 @@ private
    Scr_Y_0     : Line_Position;
    Scr_X_0     : Column_Position;
 
+   subtype Map_Y_Pos is Line_Position range 0 .. 255;
+   subtype Map_X_Pos is Line_Position range 0 .. 255;
+
    --  Screen (0, 0) location on the 256x256 tile map
-   Scr_Y_Pos : Line_Position   range 1 .. 256;
-   Scr_X_Pos : Column_Position range 1 .. 256;
+   Scr_Y_Pos : Map_Y_Pos;
+   Scr_X_Pos : Map_X_Pos;
 
    Pixel : constant String := "  ";
 
@@ -76,5 +79,8 @@ private
 
    subtype Tile_Pixel is Integer range 0 .. Tile_Width - 1;
    type Tile is array (Tile_Pixel, Tile_Pixel) of Color_Pair;
+
+   Tile_Map_0 : array (Map_Y_Pos, Map_X_Pos) of Color_Pair;
+   Tile_Map_1 : array (Map_Y_Pos, Map_X_Pos) of Color_Pair;
 
 end Display;

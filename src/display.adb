@@ -163,9 +163,8 @@ package body Display is
    procedure Render_Tile (Tile_Idx : UInt8;
                           Y_Pos    : Scr_Line_Position;
                           X_Pos    : Scr_Column_Position) is
-      T : Tile;
+      T : constant Tile := Tile_Map (Tile_Idx);
    begin
-      T := Tile_Map (Tile_Idx);
       for I in Tile_Pixel'Range loop
          for J in Tile_Pixel'Range loop
             Draw_Pixel (T (I, J),
