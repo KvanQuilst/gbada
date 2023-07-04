@@ -7,6 +7,19 @@ project Gbada is
    for Exec_Dir use "bin";
    for Main use ("gbada.adb");
 
+   type Display_Type is ("curses", "sdl");
+   Display : Display_Type := external ("display", "curses");
+
+   package Naming is
+      case Display is
+         when "curses" =>
+            for Spec ("Display") use "display-ncurses.ads";
+            for Body ("Display") use "display-ncurses.adb";
+         when "sdl" =>
+            null;
+      end case;
+   end Naming;
+
    package Compiler is
       for Default_Switches ("Ada") use Gbada_Config.Ada_Compiler_Switches &
          ("-D_DEFAULT_SOURCE", "-D_XOPEN_SOURCE=600");

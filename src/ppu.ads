@@ -2,7 +2,7 @@
 --                                                                           --
 --                                   GBADA                                   --
 --                                                                           --
---                              Display (Spec)                               --
+--                                 PPU (Spec)                                --
 --                                                                           --
 --                      Copyright (C) 2023 Dylan Eskew                       --
 --                                                                           --
@@ -21,44 +21,18 @@
 -- You should have received a copy of the GNU General Public License along   --
 -- with GBADA. If not, see <https://www.gnu.org/licenses/>.                  --
 -------------------------------------------------------------------------------
-
---  Display module for GBADA utilizing the ncurses library for a terminal-based
---  screen
-
-with Terminal_Interface.Curses; use Terminal_Interface.Curses;
-
-with Types; use Types;
-
-package Display is
-
-   function Init_Display return Boolean;
-   procedure End_Display;
-   procedure Render;
+package PPU is
 
 private
 
-   ------------
-   -- Screen --
-   ------------
+   ---------------
+   -- PPU State --
+   ---------------
 
-   Scr_Height : constant Line_Position   := 144;
-   Scr_Width  : constant Column_Position := 160;
-
-   subtype Scr_Line_Position is Line_Position range 0 .. Scr_Height - 1;
-   subtype Scr_Column_Position is Column_Position range 0 .. Scr_Width - 1;
-
-   --  ncurses location for (0, 0) of the Gameboy screen
-   Scr_Y_0     : Line_Position;
-   Scr_X_0     : Column_Position;
-
-   subtype Map_Y_Pos is Line_Position range 0 .. 255;
-   subtype Map_X_Pos is Line_Position range 0 .. 255;
-
-   --  Screen (0, 0) location on the 256x256 tile map
-   Scr_Y_Pos : Map_Y_Pos;
-   Scr_X_Pos : Map_X_Pos;
-
-   Pixel : constant String := "  ";
+   --  Dot_Count
+   --  A track of how much time has passed since the start of rendering the
+   --  current frame. Used to switch PPU state at the correct timings.
+   Dot_Count : Integer := 0;
 
    -- LCDC Masks --
    LCD_Enable       : constant UInt8 := 2#10000000#;
@@ -70,17 +44,12 @@ private
    OBJ_Enable       : constant UInt8 := 2#00000010#;
    BG_Window_Enable : constant UInt8 := 2#00000001#;
 
-   -----------
-   -- Tiles --
-   -----------
+   -- STAT Masks --
+   STAT_LYC_LY_Int  : constant UInt8 := 2#01000000#;
+   STAT_OAM_Int     : constant UInt8 := 2#00100000#;
+   STAT_VBLANK_Int  : constant UInt8 := 2#00010000#;
+   STAT_HBLANK_Int  : constant UInt8 := 2#00001000#;
+   STAT_LCY_LY_Flag : constant UInt8 := 2#00000100#;
+   STAT_Mode_Flag   : constant UInt8 := 2#00000011#;
 
-   Tile_Size : constant UInt16 := 16;
-   Tile_Width : constant := 8;
-
-   subtype Tile_Pixel is Integer range 0 .. Tile_Width - 1;
-   type Tile is array (Tile_Pixel, Tile_Pixel) of Color_Pair;
-
-   Tile_Map_0 : array (Map_Y_Pos, Map_X_Pos) of Color_Pair;
-   Tile_Map_1 : array (Map_Y_Pos, Map_X_Pos) of Color_Pair;
-
-end Display;
+end PPU;

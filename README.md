@@ -27,9 +27,19 @@ Obtain dependencies with **Alire**:
 alr update
 ```
 
-Build with **Alire** from the root directory:
+Build with **Alire** from the root directory (default display uses `ncurses`):
 ```
 alr build
+```
+
+Build using `ncurses` for the display explicitly:
+```
+alr build -- -Xdisplay=curses
+```
+
+Build using SDL 2.0 for the display explicitly (unimplemented):
+```
+alr build -- -Xdisplay=sdl
 ```
 
 ## Copyright
