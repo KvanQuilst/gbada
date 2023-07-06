@@ -21,14 +21,14 @@
 --  Main execution file for GBADA. Central location for program logic
 
 with CPU;
-with Display;
+with PPU;
 with Memory;
 
 procedure Gbada is
 begin
    Memory.Read_Cart ("games/tetris.gb");
 
-   if not Display.Init_Display then
+   if not PPU.Initialize then
       return;
    end if;
 
@@ -36,5 +36,5 @@ begin
 
    delay 10.0;
 
-   Display.End_Display;
+   PPU.Finish;
 end Gbada;

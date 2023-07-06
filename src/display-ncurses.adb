@@ -44,14 +44,14 @@ package body Display is
    --  Initialize ncureses with the appropriate settings for GBAda.
    --
    --  Returns: Boolean indicating success or failure
-   function Init_Display return Boolean is
+   function Initialize return Boolean is
       Cursor_Vis : Cursor_Visibility := Invisible;
    begin
       Init_Windows;
 
       -- Terminal Size Check --
       if Lines < Scr_Height or else Columns < Scr_Width then
-         End_Display;
+         Finish;
          Ada.Text_IO.Put_Line ("Terminal size is too small!");
          Ada.Text_IO.Put_Line ("Req:" & Scr_Height'Image & " lines," &
                                Scr_Width'Image & " columns");
@@ -82,12 +82,12 @@ package body Display is
       Refresh;
 
       return True;
-   end Init_Display;
+   end Initialize;
 
-   procedure End_Display is
+   procedure Finish is
    begin
-      null;
-   end End_Display;
+      End_Windows;
+   end Finish;
 
    --  Set_Palette
    --  Set the rendered color palette to the indicated palette
@@ -97,9 +97,28 @@ package body Display is
    procedure Set_Palette (P : Palette) is
    begin
       for I in 1 .. 4 loop
-         Init_Color (Color_Number (I), P (I, Red), P (I, Green), P (I, Blue));
+         Init_Color (Color_Number (I),
+                     RGB_Value (P (I, Red)),
+                     RGB_Value (P (I, Green)),
+                     RGB_Value (P (I, Blue)));
          Init_Pair  (Color_Pair (I), Color_Number (I), Color_Number (I));
       end loop;
    end Set_Palette;
+
+   --  Render_Scan_Line
+   --  Render the provided scan line to the screen at the SLY value in memory
+   procedure Render_Scan_Line (SL : Scan_Line; Y_Pos : Natural) is
+   begin
+      --  Make sure Y_Pos is in range of the screen
+      if Y_Pos > Screen_Height then
+         return;
+      end if;
+
+      for I in SL'Range loop
+         Draw_Pixel (Color_Pair (SL (I)),
+                     Scr_Line_Position (Y_Pos),
+                     Scr_Column_Position (I));
+      end loop;
+   end Render_Scan_Line;
 
 end Display;

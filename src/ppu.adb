@@ -26,11 +26,27 @@ with Memory;
 
 package body PPU is
 
-   -- Execute
-   -- PPU state machine logic
+   --  Initialize
+   --  Initialize the PPU start state and display
+   --
+   --  Returns: Boolean whether intialization was successful
+   function Initialize return Boolean is
+   begin
+      return Display.Initialize;
+   end Initialize;
+
+   --  Finish
+   --  Clean up display and PPU resources
+   procedure Finish is
+   begin
+      Display.Finish;
+   end Finish;
+
+   --  Execute
+   --  PPU state machine logic
    procedure Execute is
       use Memory;
-      STAT : constant UInt8 := Read_Memory (A_STAT, Is_CPU => False);
+      STAT : constant UInt8 := Read_Byte (A_STAT, Is_CPU => False);
       Mode : constant UInt2 := UInt2 (STAT and STAT_Mode_Flag);
    begin
       case Mode is
@@ -49,14 +65,14 @@ package body PPU is
          when 2 => -- OAM Overlap (80 Dots) --
             if Dot_Count = 80 then
                Dot_Count := -1;
-              
+
                --  Change STAT mode to 3
                Write_Byte ((STAT and 16#FC#) + 3, A_STAT, Is_CPU => False);
                Lock_VRAM;
             end if;
 
          when 3 => -- OAM/VRAM Render (168 - 291 Dots) --
-           null;
+            null;
       end case;
 
       Dot_Count := Dot_Count + 1;

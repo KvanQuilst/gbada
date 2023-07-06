@@ -21,7 +21,14 @@
 -- You should have received a copy of the GNU General Public License along   --
 -- with GBADA. If not, see <https://www.gnu.org/licenses/>.                  --
 -------------------------------------------------------------------------------
+with Types; use Types;
+
 package PPU is
+
+   function Initialize return Boolean;
+   procedure Finish;
+
+   procedure Execute;
 
 private
 
