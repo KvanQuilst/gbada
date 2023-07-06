@@ -24,10 +24,45 @@
 
 --  Display interface for GBADA utilizing ncurses for a terminal-based display
 
-with Terminal_Interface.Curses; use Terminal_Interface.Curses;
+private with Terminal_Interface.Curses;
 package Display is
 
    function Init_Display return Boolean;
    procedure End_Display;
+
+   type Palette is private;
+   procedure Set_Palette (P : Palette);
+
+private
+   use Terminal_Interface.Curses;
+
+   ------------
+   -- Screen --
+   ------------
+
+   Scr_Height : Line_Position   := 144;
+   Scr_Width  : Column_Position := 160;
+
+   subtype Scr_Line_Position   is Line_Position   range 0 .. Scr_Height - 1;
+   subtype Scr_Column_Position is Column_Position range 0 .. Scr_Width - 1;
+
+   --  ncurses location for (0, 0) of the Gameboy screen
+   Scr_Y_0 : Line_Position;
+   Scr_X_0 : Column_Position;
+
+   Pixel : constant String := "  ";
+
+   --------------
+   -- Palettes --
+   --------------
+
+   type Color_Value is (Red, Green, Blue);
+   type Palette is array (Integer range 1 .. 4, Color_Value) of RGB_Value;
+
+   DMG : constant Palette :=
+      ((16#0F#, 16#38#, 16#0F#),
+       (16#30#, 16#62#, 16#30#),
+       (16#8B#, 16#AC#, 16#0F#),
+       (16#9B#, 16#BC#, 16#0F#));
 
 end Display;
