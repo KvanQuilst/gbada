@@ -51,14 +51,25 @@ package body PPU is
    begin
       case Mode is
          when 0 => -- HBlank (85 - 208 Dots) --
-            null;
-
-         when 1 => -- VBlank (4560 Dots) --
-            if Dot_Count = 4560 then
+            if Dot_Count = 208 - Dot_Delay then
                Dot_Count := -1;
 
-               --  Change STAT mode to 2
-               Write_Byte ((STAT and 16#FC#) + 2, A_STAT, Is_CPU => False);
+               --  Update LY and STAT
+               Write_Byte (Read_Byte (A_LY) + 1, A_LY, Is_CPU => False);
+               Write_Byte ((STAT and 16#FC#) +
+                           (if Read_Byte (A_LY) = 144 then 2 else 1),
+                           A_LY, Is_CPU => False);
+            end if;
+
+         when 1 => -- VBlank (4560 Dots) --
+            if Dot_Count = 456 then
+               Dot_Count := -1;
+
+               --  Update LY and STAT
+               Write_Byte (Read_Byte (A_LY) + 1, A_LY, Is_CPU => False);
+               Write_Byte ((STAT and 16#FC#) +
+                           (if Read_Byte (A_LY) = 0 then 2 else 1),
+                           A_STAT, Is_CPU => False);
                Lock_OAM;
             end if;
 
@@ -72,7 +83,13 @@ package body PPU is
             end if;
 
          when 3 => -- OAM/VRAM Render (168 - 291 Dots) --
-            null;
+            if Dot_Count = 168 + Dot_Delay then
+               Dot_Count := -1;
+
+               --  Change STAT mode to 0
+               Write_Byte ((STAT and 16#FC#) + 0, A_STAT, Is_CPU => False);
+               Unlock_VRAM;
+            end if;
       end case;
 
       Dot_Count := Dot_Count + 1;

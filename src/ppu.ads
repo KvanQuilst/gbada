@@ -40,6 +40,7 @@ private
    --  A track of how much time has passed since the start of rendering the
    --  current frame. Used to switch PPU state at the correct timings.
    Dot_Count : Integer := 0;
+   Dot_Delay : Integer := 0;
 
    -- LCDC Masks --
    LCD_Enable       : constant UInt8 := 2#10000000#;
